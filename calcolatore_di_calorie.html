@@ -30,11 +30,36 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
+        /* Barra di navigazione superiore con tasto Home incorporato */
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .home-btn {
+            background-color: #7f8c8d;
+            color: white;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .home-btn:active {
+            background-color: #95a5a6;
+        }
+
         h1 {
             color: var(--primary-color);
-            font-size: 20px;
-            text-align: center;
-            margin-bottom: 20px;
+            font-size: 18px;
+            margin: 0;
         }
 
         .search-box {
@@ -48,7 +73,8 @@
             padding: 12px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 16px; /* Evita lo zoom su iOS */
+            font-size: 16px; /* Evita lo zoom automatico della pagina su Safari iOS */
+            box-sizing: border-box;
         }
 
         button {
@@ -59,9 +85,10 @@
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
+            font-size: 16px;
         }
 
-        /* Stile per il pulsante Scanner Fotocamera */
+        /* Pulsante dello Scanner Fotocamera */
         .scanner-wrapper {
             margin-bottom: 20px;
         }
@@ -76,22 +103,34 @@
             font-weight: bold;
             cursor: pointer;
             margin-bottom: 15px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .custom-file-upload:active {
+            opacity: 0.9;
         }
 
         #barcode-file-input {
-            display: none; /* Nascondiamo l'input nativo brutto */
+            display: none; /* Nasconde l'input file standard */
         }
 
         .loading {
             text-align: center;
             display: none;
             color: #7f8c8d;
-            margin: 10px 0;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-weight: 500;
         }
 
         .results-select-wrapper {
             margin-bottom: 15px;
             display: none;
+            background: #eef7fc;
+            padding: 12px;
+            border-radius: 8px;
         }
 
         select {
@@ -100,6 +139,8 @@
             border-radius: 6px;
             border: 1px solid #ccc;
             font-size: 16px;
+            margin-top: 5px;
+            background-color: white;
         }
 
         .weight-section {
@@ -108,6 +149,7 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
+            border-left: 4px solid var(--success-color);
         }
 
         .btn-success {
@@ -125,24 +167,31 @@
         .ingredient-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px solid #eee;
             font-size: 14px;
         }
 
         .total-box {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: var(--primary-color);
             margin-top: 15px;
             text-align: right;
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Calcolatore via API & Scanner</h1>
+    
+    <div class="header-nav">
+        <h1>Calcolatore & Scanner</h1>
+        <a href="index.html" class="home-btn">🏠 Home</a>
+    </div>
 
     <div class="scanner-wrapper">
         <label for="barcode-file-input" class="custom-file-upload">
@@ -152,27 +201,27 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="search-input" placeholder="O cerca per nome / digita codice">
+        <input type="text" id="search-input" placeholder="Cerca ingrediente o inserisci codice">
         <button onclick="avviaRicercaTermine()">Cerca</button>
     </div>
 
-    <div class="loading" id="loading-indicator">Elaborazione in corso...</div>
+    <div class="loading" id="loading-indicator">Elaborazione...</div>
 
     <div class="results-select-wrapper" id="results-wrapper">
-        <label style="font-size: 12px; font-weight: bold;">Seleziona il prodotto trovato:</label>
+        <label style="font-size: 13px; font-weight: bold; color: var(--primary-color);">Prodotto trovato (Seleziona se ce ne sono più):</label>
         <select id="products-select" onchange="mostraSezionePeso()"></select>
     </div>
 
     <div class="weight-section" id="weight-section">
-        <p id="info-prodotto-selezionato" style="margin: 0 0 10px 0; font-size: 14px; color: #555;"></p>
-        <input type="number" id="weight-input" placeholder="Grammi (g)">
+        <p id="info-prodotto-selezionato" style="margin: 0 0 10px 0; font-size: 14px; color: #333; font-weight: bold;"></p>
+        <input type="number" id="weight-input" placeholder="Inserisci il peso in grammi (g)">
         <button class="btn-success" onclick="aggiungiAFormulazione()">Aggiungi alla Ricetta</button>
     </div>
 
     <div class="recipe-summary">
-        <h3>Ingredienti inseriti:</h3>
+        <h3 style="color: var(--primary-color); font-size: 16px; margin-bottom: 10px;">Ingredienti aggiunti:</h3>
         <div id="lista-ingredienti"></div>
-        <div class="total-box">Totale: <span id="totale-calorie">0</span> kcal</div>
+        <div class="total-box">Totale Ricetta: <span id="totale-calorie">0</span> kcal</div>
     </div>
 </div>
 
@@ -180,59 +229,65 @@
     let calorieTotali = 0;
     let prodottoCorrenteSelezionato = null;
 
-    // 1. Logica di Scansione Immagine (Fotocamera iPhone)
+    // 1. Gestione Foto/Scansione da iPhone
     function analizzaImmagine(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const loading = document.getElementById('loading-indicator');
         loading.style.display = 'block';
-        loading.innerText = "Decodifica del codice a barre...";
+        loading.innerText = "Decodifica codice a barre...";
 
-        const html5QrCode = new Html5Qrcode("loading-indicator"); // Usiamo l'elemento solo come ancora temporanea
+        const html5QrCode = new Html5Qrcode("loading-indicator");
         
-        // Sfrutta la libreria per elaborare l'immagine scattata
         html5QrCode.scanFile(file, true)
             .then(barcodeResult => {
                 loading.style.display = 'none';
                 document.getElementById('search-input').value = barcodeResult;
-                // Esegue subito la ricerca dell'API usando il codice ottenuto
+                // Richiama l'API interpretando il valore come codice a barre (true)
                 eseguiFetchAPI(barcodeResult, true);
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("Impossibile leggere il codice a barre. Assicurati che sia ben visibile, a fuoco e riprova, oppure digitalo manualmente.");
+                alert("Impossibile rilevare un codice a barre nitido. Assicurati che l'immagine sia a fuoco o inserisci il codice/nome manualmente.");
                 console.error(err);
             });
     }
 
+    // Identifica se l'utente sta cercando una parola o un codice numerico scritto a mano
     function avviaRicercaTermine() {
         const query = document.getElementById('search-input').value.trim();
-        if (!query) return alert("Inserisci un testo o un codice");
+        if (!query) return alert("Digita un nome di un alimento o un codice prima di cercare.");
         const isBarcode = /^\d+$/.test(query);
         eseguiFetchAPI(query, isBarcode);
     }
 
-    // 2. Interrogazione API Open Food Facts
+    // 2. Interrogazione sicura alle API v2 di Open Food Facts
     async function eseguiFetchAPI(query, isBarcode) {
         const loading = document.getElementById('loading-indicator');
         const wrapper = document.getElementById('results-wrapper');
         const select = document.getElementById('products-select');
         
         loading.style.display = 'block';
-        loading.innerText = "Ricerca dati nutrizionali nell'API...";
+        loading.innerText = "Connessione all'API in corso...";
         wrapper.style.display = 'none';
         document.getElementById('weight-section').style.display = 'none';
         select.innerHTML = '';
 
         try {
+            // Utilizzo di endpoint v2 standardizzati per evitare problemi di CORS
             const url = isBarcode 
                 ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
-                : `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10`;
+                : `https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&fields=product_name,brands,nutriments&page_size=10`;
 
-            const response = await fetch(url);
+            // Configurazione della richiesta con User-Agent identificativo
+            const response = await fetch(url, {
+                headers: {
+                    'User-Agent': 'MioCalcolatoreCalorieCucina/1.0 (iPhone App)'
+                }
+            });
+            
             const data = await response.json();
-
             loading.style.display = 'none';
 
             let prodotti = [];
@@ -243,25 +298,26 @@
             }
 
             if (prodotti.length === 0) {
-                alert("Nessun prodotto trovato nel database per questo codice.");
+                alert("Nessun alimento corrispondente trovato. Controlla il codice o prova con un termine più comune (es: 'cacao').");
                 return;
             }
 
             let prodottiValidi = 0;
             prodotti.forEach(p => {
+                // Estrazione sicura del valore calorico riferito a 100g
                 const kcal = p.nutriments ? p.nutriments['energy-kcal_100g'] : null;
                 if (kcal !== undefined && kcal !== null) {
                     const option = document.createElement('option');
                     option.value = kcal;
-                    option.text = `${p.product_name || 'Ignoto'} (${p.brands || 'Nessun brand'}) - ${kcal} kcal/100g`;
-                    option.dataset.name = p.product_name || 'Prodotto';
+                    option.text = `${p.product_name || 'Prodotto non nominato'} (${p.brands || 'Brand generico'}) - ${kcal} kcal/100g`;
+                    option.dataset.name = p.product_name || 'Alimento';
                     select.appendChild(option);
                     prodottiValidi++;
                 }
             });
 
             if(prodottiValidi === 0) {
-                alert("Prodotto identificato, ma mancano i dati calorici nel database.");
+                alert("Prodotto individuato nel database, ma non contiene la tabella calorica necessaria al calcolo.");
                 return;
             }
 
@@ -270,10 +326,12 @@
 
         } catch (error) {
             loading.style.display = 'none';
-            alert("Errore di rete o blocco di sicurezza: " + error.message);
+            console.error("Dettagli errore riscontrato:", error);
+            alert("Errore di rete o blocco di sicurezza del browser. Verifica la connessione. Nota: Lo scanner richiede che l'app sia pubblicata in HTTPS (es. GitHub Pages) per funzionare su iOS.");
         }
     }
 
+    // Mostra la scheda per l'inserimento dei grammi dell'alimento selezionato
     function mostraSezionePeso() {
         const select = document.getElementById('products-select');
         if(select.options.length === 0) return;
@@ -286,35 +344,39 @@
         };
 
         document.getElementById('info-prodotto-selezionato').innerText = 
-            `Aggiungi: ${prodottoCorrenteSelezionato.nome} (${prodottoCorrenteSelezionato.kcal100g} kcal/100g)`;
+            `${prodottoCorrenteSelezionato.nome} (${prodottoCorrenteSelezionato.kcal100g} kcal/100g)`;
         document.getElementById('weight-section').style.display = 'block';
     }
 
+    // Calcola l'apporto in base ai grammi e aggiorna il totale progressivo
     function aggiungiAFormulazione() {
         const pesoInput = document.getElementById('weight-input');
         const grammi = parseFloat(pesoInput.value);
 
         if (isNaN(grammi) || grammi <= 0) {
-            alert("Inserisci un peso valido.");
+            alert("Inserisci una quantità in grammi valida e maggiore di zero.");
             return;
         }
 
         const calorieIngrediente = (prodottoCorrenteSelezionato.kcal100g * grammi) / 100;
         calorieTotali += calorieIngrediente;
 
+        // Aggiunta visiva alla lista degli ingredienti caricati
         const lista = document.getElementById('lista-ingredienti');
         const item = document.createElement('div');
         item.className = 'ingredient-item';
-        item.innerHTML = `<span>${prodottoCorrenteSelezionato.nome} (${grammi}g)</span><span>+${calorieIngrediente.toFixed(1)} kcal</span>`;
+        item.innerHTML = `<span>🔹 ${prodottoCorrenteSelezionato.nome} (${grammi}g)</span><span><strong>+${calorieIngrediente.toFixed(1)}</strong> kcal</span>`;
         lista.appendChild(item);
 
+        // Aggiorna la box del totale complessivo
         document.getElementById('totale-calorie').innerText = calorieTotali.toFixed(1);
 
+        // Ripristino dello stato iniziale per il prossimo ingrediente
         pesoInput.value = '';
         document.getElementById('weight-section').style.display = 'none';
         document.getElementById('results-wrapper').style.display = 'none';
         document.getElementById('search-input').value = '';
-        document.getElementById('barcode-file-input').value = ''; // Libera l'input file
+        document.getElementById('barcode-file-input').value = ''; 
     }
 </script>
 
