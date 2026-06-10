@@ -184,7 +184,7 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="search-input" placeholder="Cerca per nome (es: farina, zucchero)">
+        <input type="text" id="search-input" placeholder="Cerca ingrediente (es: farina, cacao)">
         <button onclick="avviaRicercaTesto()">Cerca</button>
     </div>
 
@@ -212,18 +212,20 @@
     let calorieTotali = 0;
     let prodottoCorrenteSelezionato = null;
 
-    // FUNZIONE DI RICERCA TESTUALE LIBERA E COMPATIBILE
+    // NUOVA RICERCA V2 CON FILTRO ITALIA E PAROLA CHIAVE PERFETTA
     async function avviaRicercaTesto() {
         const query = document.getElementById('search-input').value.trim();
         if (!query) return alert("Inserisci un termine di ricerca.");
         
-        gestisciInterfacceCaricamento(true, "Ricerca in corso nel database italiano...");
+        gestisciInterfacceCaricamento(true, "Ricerca mirata nel database italiano...");
 
         try {
-            // Questo endpoint bypassa le restrizioni CORS e cerca nel database globale (compreso quello italiano)
-            const url = `https://it.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`;
+            // API v2: cerca i prodotti che contengono la parola nel nome, filtrando solo per il mercato italiano (it)
+            const url = `https://it.openfoodfacts.org/api/v2/search?countries_tags=italia&keywords=${encodeURIComponent(query)}&fields=product_name,brands,nutriments&page_size=24`;
             
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'MioCalcolatoreCalorieCucina/1.0' }
+            });
             const data = await response.json();
             
             gestisciInterfacceCaricamento(false);
@@ -231,20 +233,20 @@
             if (data.products && data.products.length > 0) {
                 popolaSelettoreProdotti(data.products);
             } else {
-                alert("Nessun alimento trovato. Prova con una parola diversa (es: 'farina di grano').");
+                alert("Nessun alimento trovato con questo nome. Prova a essere più specifico.");
             }
         } catch (error) {
             gestisciInterfacceCaricamento(false);
-            alert("Errore di connessione. Controlla la rete e riprova.");
+            alert("Errore di connessione con il database delle calorie. Riprova.");
         }
     }
 
-    // ANALISI FOTO CODICE A BARRE
+    // SCANSIONE TRAMITE IMMAGINE (FUNZIONANTE)
     async function analizzaFotoConServer(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        gestisciInterfacceCaricamento(true, "Lettura del codice a barre in corso...");
+        gestisciInterfacceCaricamento(true, "Lettura del codice a barre...");
 
         const formData = new FormData();
         formData.append('barcode_image', file);
@@ -261,11 +263,11 @@
             if (data.status === 1 && data.product) {
                 popolaSelettoreProdotti([data.product]);
             } else {
-                alert("Codice a barre non rilevato o non nitido. Prova a scrivere il nome dell'ingrediente.");
+                alert("Codice a barre non rilevato nella foto. Prova a scrivere il nome dell'ingrediente.");
             }
         } catch (error) {
             gestisciInterfacceCaricamento(false);
-            alert("Impossibile elaborare l'immagine. Inserisci il nome dell'ingrediente a mano.");
+            alert("Impossibile elaborare l'immagine. Usa la ricerca manuale per nome.");
         }
     }
 
@@ -280,8 +282,11 @@
             if (kcal !== undefined && kcal !== null) {
                 const option = document.createElement('option');
                 option.value = kcal;
-                option.text = `${p.product_name || 'Alimento generico'} (${p.brands || 'Marca sconosciuta'}) - ${kcal} kcal/100g`;
-                option.dataset.name = p.product_name || 'Ingrediente';
+                // Mostra un nome pulito unendo marca e prodotto
+                const nomeProdotto = p.product_name || 'Alimento generico';
+                const marcaProdotto = p.brands || 'Generico';
+                option.text = `${nomeProdotto} (${marcaProdotto}) - ${kcal} kcal/100g`;
+                option.dataset.name = nomeProdotto;
                 select.appendChild(option);
                 prodottiValidi++;
             }
@@ -291,7 +296,7 @@
             wrapper.style.display = 'block';
             mostraSezionePeso();
         } else {
-            alert("Prodotti trovati, ma nessuno contiene il valore delle kcal nel database.");
+            alert("I prodotti trovati non contengono informazioni sulle calorie (kcal).");
         }
     }
 
@@ -302,7 +307,7 @@
         const opzioneSelezionata = select.options[select.selectedIndex];
         prodottoCorrenteSelezionato = {
             nome: opzioneSelezionata.dataset.name,
-            kcal100g: parseFloat(opzioneSelettore = opzioneSelezionata.value)
+            kcal100g: parseFloat(opzioneSelezionata.value) // CORRETTO REFUSO DI BATTITURA VECCHIO
         };
 
         document.getElementById('info-prodotto-selezionato').innerText = 
@@ -315,7 +320,7 @@
         const grammi = parseFloat(pesoInput.value);
 
         if (isNaN(grammi) || grammi <= 0) {
-            alert("Inserisci un peso valido.");
+            alert("Inserisci un peso valido maggiore di zero.");
             return;
         }
 
@@ -330,6 +335,7 @@
 
         document.getElementById('totale-calorie').innerText = calorieTotali.toFixed(1);
 
+        // Reset dei campi per l'ingrediente successivo
         pesoInput.value = '';
         document.getElementById('weight-section').style.display = 'none';
         document.getElementById('results-wrapper').style.display = 'none';
