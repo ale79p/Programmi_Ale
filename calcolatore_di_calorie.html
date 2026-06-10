@@ -244,7 +244,6 @@
             .then(barcodeResult => {
                 loading.style.display = 'none';
                 document.getElementById('search-input').value = barcodeResult;
-                // Richiama l'API interpretando il valore come codice a barre (true)
                 eseguiFetchAPI(barcodeResult, true);
             })
             .catch(err => {
@@ -275,12 +274,11 @@
         select.innerHTML = '';
 
         try {
-            // Utilizzo di endpoint v2 standardizzati per evitare problemi di CORS
+            // CORREZIONE: Utilizzo di search_terms per consentire la ricerca di parole libere (es. "Farina")
             const url = isBarcode 
                 ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
-                : `https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&fields=product_name,brands,nutriments&page_size=10`;
+                : `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(query)}&fields=product_name,brands,nutriments&page_size=10`;
 
-            // Configurazione della richiesta con User-Agent identificativo
             const response = await fetch(url, {
                 headers: {
                     'User-Agent': 'MioCalcolatoreCalorieCucina/1.0 (iPhone App)'
@@ -298,13 +296,12 @@
             }
 
             if (prodotti.length === 0) {
-                alert("Nessun alimento corrispondente trovato. Controlla il codice o prova con un termine più comune (es: 'cacao').");
+                alert("Nessun alimento corrispondente trovato. Controlla il codice o prova con un termine più specifico.");
                 return;
             }
 
             let prodottiValidi = 0;
             prodotti.forEach(p => {
-                // Estrazione sicura del valore calorico riferito a 100g
                 const kcal = p.nutriments ? p.nutriments['energy-kcal_100g'] : null;
                 if (kcal !== undefined && kcal !== null) {
                     const option = document.createElement('option');
@@ -327,7 +324,7 @@
         } catch (error) {
             loading.style.display = 'none';
             console.error("Dettagli errore riscontrato:", error);
-            alert("Errore di rete o blocco di sicurezza del browser. Verifica la connessione. Nota: Lo scanner richiede che l'app sia pubblicata in HTTPS (es. GitHub Pages) per funzionare su iOS.");
+            alert("Errore di rete o blocco durante la comunicazione con l'API Open Food Facts. Riprova tra pochi istanti.");
         }
     }
 
@@ -361,17 +358,14 @@
         const calorieIngrediente = (prodottoCorrenteSelezionato.kcal100g * grammi) / 100;
         calorieTotali += calorieIngrediente;
 
-        // Aggiunta visiva alla lista degli ingredienti caricati
         const lista = document.getElementById('lista-ingredienti');
         const item = document.createElement('div');
         item.className = 'ingredient-item';
         item.innerHTML = `<span>🔹 ${prodottoCorrenteSelezionato.nome} (${grammi}g)</span><span><strong>+${calorieIngrediente.toFixed(1)}</strong> kcal</span>`;
         lista.appendChild(item);
 
-        // Aggiorna la box del totale complessivo
         document.getElementById('totale-calorie').innerText = calorieTotali.toFixed(1);
 
-        // Ripristino dello stato iniziale per il prossimo ingrediente
         pesoInput.value = '';
         document.getElementById('weight-section').style.display = 'none';
         document.getElementById('results-wrapper').style.display = 'none';
