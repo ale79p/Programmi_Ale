@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Proporzioni 1.4</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 15px;
+      background: #f5f5f5;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    #top-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .voce-card {
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+    }
+
+    label {
+      font-size: 14px;
+      margin-top: 5px;
+      display: block;
+    }
+
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+
+    input, select {
+      width: 100%;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      margin-top: 10px;
+    }
+
+    button:active {
+      background: #0056b3;
+    }
+
+    .remove-btn {
+      background: #ff4444;
+    }
+
+    .titolo-risultato-box {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .titolo-risultato-box input {
+      flex: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Proporzioni</h2>
+
+<div id="top-buttons">
+  <button onclick="pulisciTutto()">Pulisci tutto</button>
+</div>
+
+<div class="card">
+  <h3>Voci</h3>
+
+  <div id="voci"></div>
+
+  <button onclick="aggiungiVoce()">+ Aggiungi voce</button>
+</div>
+
+<div class="card">
+  <h3>Modifica proporzioni</h3>
+
+  <label>Voce da modificare:</label>
+  <select id="modIndex"></select>
+
+  <label>Nuovo valore:</label>
+  <input id="nuovoValore" type="number" placeholder="Es. 150">
+
+  <button onclick="ricalcola()">Ricalcola</button>
+</div>
+
+<div class="card">
+  <h3>Risultato</h3>
+
+  <div class="titolo-risultato-box">
+    <label style="margin:0; font-size:14px;">Titolo:</label>
+    <input id="titoloRicetta" type="text" placeholder="Titolo per schermata">
+  </div>
+
+  <div id="risultato"></div>
+</div>
+
+<script>
+var count = 0;
+
+function aggiungiVoce(nome, valore) {
+  if (!nome) nome = "";
+  if (!valore) valore = "";
+
+  var container = document.getElementById("voci");
+
+  var card = document.createElement("div");
+  card.className = "voce-card";
+  card.setAttribute("data-index", count);
+
+  card.innerHTML =
+    '<label>Nome:</label>' +
+    '<input type="text" id="nome' + count + '" value="' + nome + '" placeholder="Nome">' +
+    '<label>Valore:</label>' +
+    '<input type="number" id="valore' + count + '" value="' + valore + '" placeholder="Valore">' +
+    '<button class="remove-btn" onclick="rimuoviVoce(' + count + ')">Rimuovi</button>';
+
+  container.appendChild(card);
+  count++;
+  aggiornaSelect();
+}
+
+function rimuoviVoce(i) {
+  var card = document.querySelector('.voce-card[data-index="' + i + '"]');
+  if (card) card.remove();
+  aggiornaSelect();
+}
+
+function aggiornaSelect() {
+  var sel = document.getElementById("modIndex");
+  sel.innerHTML = "";
+
+  var cards = document.querySelectorAll(".voce-card");
+  for (var i = 0; i < cards.length; i++) {
+    var id = cards[i].getAttribute("data-index");
+    var nomeInput = document.getElementById("nome" + id);
+    var nome = (nomeInput && nomeInput.value) ? nomeInput.value : ("Voce " + (i + 1));
+
+    var opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = nome;
+    sel.appendChild(opt);
+  }
+}
+
+function ricalcola() {
+  var cards = document.querySelectorAll(".voce-card");
+  if (cards.length < 2) {
+    alert("Inserisci almeno 2 voci.");
+    return;
+  }
+
+  var index = document.getElementById("modIndex").value;
+  var nuovo = parseFloat(document.getElementById("nuovoValore").value);
+  if (isNaN(nuovo) || nuovo <= 0) {
+    alert("Inserisci un valore valido.");
+    return;
+  }
+
+  var valori = [];
+  var nomi = [];
+
+  for (var i = 0; i < cards.length; i++) {
+    var id = cards[i].getAttribute("data-index");
+    var nome = document.getElementById("nome" + id).value;
+    var valore = parseFloat(document.getElementById("valore" + id).value);
+
+    if (isNaN(valore) || valore <= 0) {
+      alert("Tutti i valori devono essere numeri maggiori di zero.");
+      return;
+    }
+
+    nomi.push(nome);
+    valori.push(valore);
+  }
+
+  var pos = -1;
+  for (var j = 0; j < cards.length; j++) {
+    if (cards[j].getAttribute("data-index") == index) pos = j;
+  }
+  if (pos === -1) {
+    alert("Voce selezionata non trovata.");
+    return;
+  }
+
+  var vecchio = valori[pos];
+  var rapporto = nuovo / vecchio;
+
+  var nuoviValori = [];
+  for (var k = 0; k < valori.length; k++) {
+    nuoviValori.push(valori[k] * rapporto);
+  }
+
+  mostraRisultato(nomi, nuoviValori);
+}
+
+function mostraRisultato(nomi, valori) {
+  var div = document.getElementById("risultato");
+  div.innerHTML = "";
+
+  var totale = 0;
+  for (var i = 0; i < valori.length; i++) {
+    totale += valori[i];
+  }
+
+  var titolo = document.getElementById("titoloRicetta").value;
+  if (titolo && titolo.trim() !== "") {
+    div.innerHTML += "<h3>" + titolo + "</h3>";
+  }
+
+  for (var j = 0; j < nomi.length; j++) {
+    var perc = (valori[j] / totale) * 100;
+    div.innerHTML +=
+      "<strong>" + nomi[j] + "</strong>: " +
+      valori[j].toFixed(2) + " (" + perc.toFixed(2) + "%)<br>";
+  }
+
+  div.innerHTML += "<br><strong>Totale:</strong> " + totale.toFixed(2);
+}
+
+function pulisciTutto() {
+  document.getElementById("voci").innerHTML = "";
+  document.getElementById("risultato").innerHTML = "";
+  document.getElementById("nuovoValore").value = "";
+  document.getElementById("titoloRicetta").value = "";
+  count = 0;
+  aggiornaSelect();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ricettario & Strumenti Cucina</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --background-color: #f1f2f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --calorie-color: #e67e22;
+            --proporzioni-color: #2980b9;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        /* Stile dei pulsanti/card di collegamento */
+        .app-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 6px solid #ccc;
+            -webkit-tap-highlight-color: transparent; /* Rimuove il flash nero al tocco su iOS */
+        }
+
+        /* Effetto pressione su iPhone */
+        .app-card:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card-calorie {
+            border-left-color: var(--calorie-color);
+        }
+
+        .card-proporzioni {
+            border-left-color: var(--proporzioni-color);
+        }
+
+        .icon-wrapper {
+            font-size: 32px;
+            margin-right: 20px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .info-wrapper {
+            flex: 1;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 0 0 5px 0;
+        }
+
+        .app-description {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .arrow {
+            color: #bdf;
+            font-size: 20px;
+            font-weight: bold;
+            padding-left: 10px;
+        }
+        
+        .card-calorie .arrow { color: var(--calorie-color); }
+        .card-proporzioni .arrow { color: var(--proporzioni-color); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>I Miei Strumenti di Cucina</h1>
+    <div class="subtitle">Seleziona l'applicazione che desideri utilizzare</div>
+
+    <a href="calcolatore_di_calorie.html" class="app-card card-calorie">
+        <div class="icon-wrapper">📊</div>
+        <div class="info-wrapper">
+            <div class="app-title">Calcolatore Calorie & Scanner</div>
+            <div class="app-description">Scansiona i codici a barre o cerca ingredienti tramite API per calcolare l'apporto calorico complessivo.</div>
+        </div>
+        <div class="arrow">›</div>
+    </a>
+
+    <a href="proporzioni.html" class="app-card card-proporzioni">
+        <div class="icon-wrapper">⚖️</div>
+        <div class="info-wrapper">
+            <div class="app-title">Bilanciatore Proporzioni</div>
+            <div class="app-description">Modifica le proporzioni e ricalcola istantaneamente le dosi di tutti gli ingredienti di una ricetta.</div>
+        </div>
+        <div class="arrow">›</div>
+    </a>
+</div>
+
+</body>
+</html>

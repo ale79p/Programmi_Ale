@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Ricette con Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --scan-color: #9b59b6;
+            --background-color: #f1f2f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background-color);
+            padding: 15px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"], input[type="number"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px; /* Evita lo zoom su iOS */
+        }
+
+        button {
+            padding: 12px 18px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Stile per il pulsante Scanner Fotocamera */
+        .scanner-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .custom-file-upload {
+            display: block;
+            background-color: var(--scan-color);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        #barcode-file-input {
+            display: none; /* Nascondiamo l'input nativo brutto */
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+
+        .results-select-wrapper {
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .weight-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .recipe-summary {
+            margin-top: 20px;
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+        }
+
+        .ingredient-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .total-box {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 15px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Calcolatore via API & Scanner</h1>
+
+    <div class="scanner-wrapper">
+        <label for="barcode-file-input" class="custom-file-upload">
+            📷 Scansiona Codice a Barre
+        </label>
+        <input type="file" id="barcode-file-input" accept="image/*" capture="environment" onchange="analizzaImmagine(event)">
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="O cerca per nome / digita codice">
+        <button onclick="avviaRicercaTermine()">Cerca</button>
+    </div>
+
+    <div class="loading" id="loading-indicator">Elaborazione in corso...</div>
+
+    <div class="results-select-wrapper" id="results-wrapper">
+        <label style="font-size: 12px; font-weight: bold;">Seleziona il prodotto trovato:</label>
+        <select id="products-select" onchange="mostraSezionePeso()"></select>
+    </div>
+
+    <div class="weight-section" id="weight-section">
+        <p id="info-prodotto-selezionato" style="margin: 0 0 10px 0; font-size: 14px; color: #555;"></p>
+        <input type="number" id="weight-input" placeholder="Grammi (g)">
+        <button class="btn-success" onclick="aggiungiAFormulazione()">Aggiungi alla Ricetta</button>
+    </div>
+
+    <div class="recipe-summary">
+        <h3>Ingredienti inseriti:</h3>
+        <div id="lista-ingredienti"></div>
+        <div class="total-box">Totale: <span id="totale-calorie">0</span> kcal</div>
+    </div>
+</div>
+
+<script>
+    let calorieTotali = 0;
+    let prodottoCorrenteSelezionato = null;
+
+    // 1. Logica di Scansione Immagine (Fotocamera iPhone)
+    function analizzaImmagine(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const loading = document.getElementById('loading-indicator');
+        loading.style.display = 'block';
+        loading.innerText = "Decodifica del codice a barre...";
+
+        const html5QrCode = new Html5Qrcode("loading-indicator"); // Usiamo l'elemento solo come ancora temporanea
+        
+        // Sfrutta la libreria per elaborare l'immagine scattata
+        html5QrCode.scanFile(file, true)
+            .then(barcodeResult => {
+                loading.style.display = 'none';
+                document.getElementById('search-input').value = barcodeResult;
+                // Esegue subito la ricerca dell'API usando il codice ottenuto
+                eseguiFetchAPI(barcodeResult, true);
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                alert("Impossibile leggere il codice a barre. Assicurati che sia ben visibile, a fuoco e riprova, oppure digitalo manualmente.");
+                console.error(err);
+            });
+    }
+
+    function avviaRicercaTermine() {
+        const query = document.getElementById('search-input').value.trim();
+        if (!query) return alert("Inserisci un testo o un codice");
+        const isBarcode = /^\d+$/.test(query);
+        eseguiFetchAPI(query, isBarcode);
+    }
+
+    // 2. Interrogazione API Open Food Facts
+    async function eseguiFetchAPI(query, isBarcode) {
+        const loading = document.getElementById('loading-indicator');
+        const wrapper = document.getElementById('results-wrapper');
+        const select = document.getElementById('products-select');
+        
+        loading.style.display = 'block';
+        loading.innerText = "Ricerca dati nutrizionali nell'API...";
+        wrapper.style.display = 'none';
+        document.getElementById('weight-section').style.display = 'none';
+        select.innerHTML = '';
+
+        try {
+            const url = isBarcode 
+                ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
+                : `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            loading.style.display = 'none';
+
+            let prodotti = [];
+            if (isBarcode && data.status === 1) {
+                prodotti.push(data.product);
+            } else if (!isBarcode && data.products && data.products.length > 0) {
+                prodotti = data.products;
+            }
+
+            if (prodotti.length === 0) {
+                alert("Nessun prodotto trovato nel database per questo codice.");
+                return;
+            }
+
+            let prodottiValidi = 0;
+            prodotti.forEach(p => {
+                const kcal = p.nutriments ? p.nutriments['energy-kcal_100g'] : null;
+                if (kcal !== undefined && kcal !== null) {
+                    const option = document.createElement('option');
+                    option.value = kcal;
+                    option.text = `${p.product_name || 'Ignoto'} (${p.brands || 'Nessun brand'}) - ${kcal} kcal/100g`;
+                    option.dataset.name = p.product_name || 'Prodotto';
+                    select.appendChild(option);
+                    prodottiValidi++;
+                }
+            });
+
+            if(prodottiValidi === 0) {
+                alert("Prodotto identificato, ma mancano i dati calorici nel database.");
+                return;
+            }
+
+            wrapper.style.display = 'block';
+            mostraSezionePeso();
+
+        } catch (error) {
+            loading.style.display = 'none';
+            alert("Errore di rete o blocco di sicurezza: " + error.message);
+        }
+    }
+
+    function mostraSezionePeso() {
+        const select = document.getElementById('products-select');
+        if(select.options.length === 0) return;
+        
+        const opzioneSelezionata = select.options[select.selectedIndex];
+        
+        prodottoCorrenteSelezionato = {
+            nome: opzioneSelezionata.dataset.name,
+            kcal100g: parseFloat(opzioneSelezionata.value)
+        };
+
+        document.getElementById('info-prodotto-selezionato').innerText = 
+            `Aggiungi: ${prodottoCorrenteSelezionato.nome} (${prodottoCorrenteSelezionato.kcal100g} kcal/100g)`;
+        document.getElementById('weight-section').style.display = 'block';
+    }
+
+    function aggiungiAFormulazione() {
+        const pesoInput = document.getElementById('weight-input');
+        const grammi = parseFloat(pesoInput.value);
+
+        if (isNaN(grammi) || grammi <= 0) {
+            alert("Inserisci un peso valido.");
+            return;
+        }
+
+        const calorieIngrediente = (prodottoCorrenteSelezionato.kcal100g * grammi) / 100;
+        calorieTotali += calorieIngrediente;
+
+        const lista = document.getElementById('lista-ingredienti');
+        const item = document.createElement('div');
+        item.className = 'ingredient-item';
+        item.innerHTML = `<span>${prodottoCorrenteSelezionato.nome} (${grammi}g)</span><span>+${calorieIngrediente.toFixed(1)} kcal</span>`;
+        lista.appendChild(item);
+
+        document.getElementById('totale-calorie').innerText = calorieTotali.toFixed(1);
+
+        pesoInput.value = '';
+        document.getElementById('weight-section').style.display = 'none';
+        document.getElementById('results-wrapper').style.display = 'none';
+        document.getElementById('search-input').value = '';
+        document.getElementById('barcode-file-input').value = ''; // Libera l'input file
+    }
+</script>
+
+</body>
+</html>
