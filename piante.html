@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Pronto Soccorso Piante & Orto</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background: #f1f2f6;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #2e7d32; /* Verde Orto */
+    }
+
+    .home-btn {
+      background-color: #7f8c8d;
+      color: white;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .lens-box {
+      background: #fff9db;
+      border: 1px solid #fab005;
+    }
+
+    .lens-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f59f00;
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    ol {
+      margin: 5px 0;
+      padding-left: 20px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: white;
+      box-sizing: border-box;
+    }
+
+    .diagnostic-result {
+      display: none;
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .carenza {
+      background: #fff0f6;
+      border-left: 4px solid #d6336c;
+    }
+
+    .parassita {
+      background: #fff5f5;
+      border-left: 4px solid #ff6b6b;
+    }
+
+    .irrigazione {
+      background: #e3faffc7;
+      border-left: 4px solid #22b8cf;
+    }
+
+    .res-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #111;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header-nav">
+    <h2>🌿 Diagnostica Piante</h2>
+    <a href="index.html" class="home-btn">🏠 Home</a>
+  </div>
+
+  <div class="card lens-box">
+    <h3 class="lens-title">📸 Riconoscimento Visivo Istantaneo</h3>
+    <p style="margin: 0 0 8px 0; font-size: 13.5px; color: #666;">
+      Per identificare insetti sconosciuti, macchie strane o il nome esatto di una pianta, usa la fotocamera del telefono con il sistema gratuito di Google:
+    </p>
+    <ol>
+      <li>Apri la <strong>Fotocamera</strong> del tuo smartphone.</li>
+      <li>Inquadra la foglia o l'insetto malato.</li>
+      <li>Tocca il piccolo simbolo di <strong>Google Lens</strong> (l'icona a forma di cerchio/quadrato colorato) oppure tieni premuto sullo schermo.</li>
+      <li>Il telefono cercherà visivamente sul web mostrandoti malattie identiche e rimedi immediati.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>🔍 Guida Rapida ai Sintomi</h3>
+    <p style="margin: 0 0 15px 0; font-size: 13.5px; color: #666;">
+      Cosa noti sulla pianta o sugli ortaggi in questo momento? Seleziona il sintomo principale per capire di cosa ha bisogno.
+    </p>
+
+    <label for="sintomo-selector">Seleziona il problema visibile:</label>
+    <select id="sintomo-selector" onchange="analizzaSintomo()">
+      <option value="">-- Scegli cosa vedi --</option>
+      <option value="foglie-gialle-vecchie">Foglie più vecchie (in basso) che ingialliscono completamente</option>
+      <option value="foglie-gialle-venature">Foglie gialle ma con le venature rimaste ben verdi</option>
+      <option value="punte-secche">Punte o bordi delle foglie marroni e secchi</option>
+      <option value="macchie-polvere-bianca">Polvere bianca (simile a farina) sulle foglie</option>
+      <option value="marciume-apicale">Pomodori con una macchia nera e piatta sul fondo</option>
+      <option value="foglie-appiccicose">Foglie appiccicose piene di minuscoli insetti (verdi/neri)</option>
+      <option value="foglie-mosce">Foglie moscie e cadenti (terra asciutta)</option>
+    </select>
+
+    <div id="risultato-diagnosi" class="diagnostic-result"></div>
+  </div>
+
+</div>
+
+<script>
+function analizzaSintomo() {
+  var selector = document.getElementById("sintomo-selector");
+  var box = document.getElementById("risultato-diagnosi");
+  var sintomo = selector.value;
+
+  if (!sintomo) {
+    box.style.display = "none";
+    return;
+  }
+
+  // Database dei sintomi con cause e soluzioni biologiche
+  var diagnosi = {
+    "foglie-gialle-vecchie": {
+      tipo: "carenza",
+      badge: "CARENZA DI NUTRIENTI",
+      coloreBadge: "#d6336c",
+      titolo: "Carenza di Azoto (N)",
+      descrizione: "La pianta sta esaurendo il nutrimento principale per crescere. Toglie energia alle foglie vecchie in basso per darla a quelle nuove in cima.",
+      rimedio: "<strong>Cosa fare:</strong> Somministra un concime organico azotato biologico (es. stallatico pellettato, siero di latte diluito, o un fertilizzante liquido per orto)."
+    },
+    "foglie-gialle-venature": {
+      tipo: "carenza",
+      badge: "CARENZA NUTRIZIONALE",
+      coloreBadge: "#d6336c",
+      titolo: "Clorosi Ferrica (Mancanza di Ferro)",
+      descrizione: "La pianta non riesce ad assorbire abbastanza ferro. Spesso succede nei terreni troppo calcarei o a causa di annaffiature con acqua troppo dura (dal rubinetto).",
+      rimedio: "<strong>Cosa fare:</strong> Somministra del ferro chelato (detto anche rinverdente). Per il futuro, prova a bagnare la pianta con acqua piovana o decantata."
+    },
+    "punte-secche": {
+      tipo: "irrigazione",
+      badge: "ERRORE DI IRRIGAZIONE / CLIMA",
+      coloreBadge: "#22b8cf",
+      titolo: "Bruciatura da vento secco o carenza idrica",
+      descrizione: "L'umidità ambientale è troppo bassa o l'acqua non arriva alle estremità della foglia. Può anche indicare un eccesso di sali/concime nel terreno.",
+      rimedio: "<strong>Cosa fare:</strong> Regola le annaffiature assicurandoti che l'acqua penetri a fondo e pacciama la base della pianta per trattenere l'umidità."
+    },
+    "macchie-polvere-bianca": {
+      tipo: "parassita",
+      badge: "FUNGO / MALATTIA",
+      coloreBadge: "#ff6b6b",
+      titolo: "Oidio (Mal Bianco)",
+      descrizione: "È una malattia fungina molto comune causata da un mix di forte umidità notturna e caldo diurno (frequente su zucchine, zucche e piante dell'orto).",
+      rimedio: "<strong>Cosa fare:</strong> Elimina le foglie più colpite. Tratta la pianta spruzzando una soluzione di acqua e bicarbonato di sodio (1 cucchiaino per litro) oppure usa dello zolfo ventilato."
+    },
+    "marciume-apicale": {
+      tipo: "carenza",
+      badge: "SQUILIBRIO IDRICO / CALCIO",
+      coloreBadge: "#d6336c",
+      titolo: "Marciume Apicale (Il 'Culo Nero' del pomodoro)",
+      descrizione: "Non è una malattia infettiva, ma una carenza di Calcio nei frutti. Succede quasi sempre a causa di annaffiature irregolari (alternanza secco/troppo bagnato) che bloccano il trasporto dei minerali.",
+      rimedio: "<strong>Cosa fare:</strong> Mantieni le annaffiature costanti senza far subire shock idrici alla pianta. Rimuovi i frutti già colpiti (non guariranno)."
+    },
+    "foglie-appiccicose": {
+      tipo: "parassita",
+      badge: "INFESTAZIONE PARASSITI",
+      coloreBadge: "#ff6b6b",
+      titolo: "Afidi (Pidocchi delle piante)",
+      descrizione: "Piccoli insetti che succhiano la linfa e producono una sostanza zuccherina e appiccicosa (melata) che attira le formiche e può causare funghi neri.",
+      rimedio: "<strong>Cosa fare:</strong> Spruzza la sera del Sapone di Marsiglia liquido diluito in acqua (circa 15-20 grammi per litro) per soffocare i parassiti in modo biologico senza chimica."
+    },
+    "foglie-mosce": {
+      tipo: "irrigazione",
+      badge: "DISIDRATAZIONE",
+      coloreBadge: "#22b8cf",
+      titolo: "Carenza d'acqua acuta",
+      descrizione: "Le cellule della pianta hanno perso pressione idrica. Succede nelle ore più calde se il terreno è completamente asciutto.",
+      rimedio: "<strong>Cosa fare:</strong> Irriga abbondantemente alla base della pianta **solo la sera o la mattina presto**. Evita assolutamente di bagnare le foglie sotto il sole cocente."
+    }
+  };
+
+  var d = diagnosi[sintomo];
+  
+  // Applica la classe corretta per il bordo colorato (carenza, parassita, irrigazione)
+  box.className = "diagnostic-result " + d.tipo;
+  
+  // Costruisce l'HTML dentro la scheda dei risultati
+  box.innerHTML = 
+    '<span class="badge" style="background-color:' + d.coloreBadge + ';">' + d.badge + '</span>' +
+    '<div class="res-title">' + d.titolo + '</div>' +
+    '<p style="margin: 0 0 10px 0; color:#444;">' + d.descrizione + '</p>' +
+    '<p style="margin: 0; color:#111;">' + d.rimedio + '</p>';
+
+  box.style.display = "block";
+}
+</script>
+
+</body>
+</html>
