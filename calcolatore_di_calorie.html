@@ -284,6 +284,7 @@
 
     <div class="recipe-summary">
         <h3 style="color: var(--primary-color); font-size: 16px; margin-bottom: 10px;">Ingredienti inseriti:</h3>
+        <div id="lista-indigo"></div>
         <div id="lista-ingredienti"></div>
         
         <div class="total-macros-box">
@@ -368,7 +369,7 @@
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("Impossibile leggere il codice a barre. Assicurati che sia ben visibile e a fuoco.");
+                alert("Impossibile leggere il codice a barre. Prova ad inserirlo manualmente se la foto è sfocata.");
                 console.error(err);
             });
     }
@@ -380,27 +381,27 @@
         eseguiFetchAPI(query, isBarcode);
     }
 
-    // Correzione degli endpoint di ricerca Open Food Facts
     async function eseguiFetchAPI(query, isBarcode) {
         const loading = document.getElementById('loading-indicator');
         const wrapper = document.getElementById('results-wrapper');
         const select = document.getElementById('products-select');
         
         loading.style.display = 'block';
-        loading.innerText = "Ricerca dati nutrizionali...";
+        loading.innerText = "Ricerca dati nel database italiano...";
         wrapper.style.display = 'none';
         document.getElementById('weight-section').style.display = 'none';
         select.innerHTML = '';
 
         try {
-            // Se è un barcode cerchiamo il prodotto singolo, se è testo usiamo la ricerca v2 mirata sull'Italia
+            // Se è un codice a barre cerchiamo il prodotto diretto, se è testo forziamo i filtri di ricerca CGI sull'Italia
             const url = isBarcode 
                 ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
-                : `https://it.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&countries_tags=italia&fields=product_name,brands,nutriments&page_size=20`;
+                : `https://it.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=30`;
 
             const response = await fetch(url);
+            if (!response.ok) throw new Error("Risposta del server non ottimale");
+            
             const data = await response.json();
-
             loading.style.display = 'none';
 
             let prodotti = [];
@@ -410,40 +411,33 @@
                 prodotti = data.products;
             }
 
-            // Fallback: se la ricerca per categoria/tag non produce nulla, proviamo con parole chiave generali sempre in Italia
-            if (!isBarcode && prodotti.length === 0) {
-                const fallbackUrl = `https://it.openfoodfacts.org/api/v2/search?keywords=${encodeURIComponent(query)}&countries_tags=italia&fields=product_name,brands,nutriments&page_size=20`;
-                const fallbackResponse = await fetch(fallbackUrl);
-                const fallbackData = await fallbackResponse.json();
-                if (fallbackData.products) prodotti = fallbackData.products;
-            }
-
             if (prodotti.length === 0) {
-                alert("Nessun prodotto trovato. Prova con un termine più specifico.");
+                alert("Nessun alimento trovato per: " + query);
                 return;
             }
 
             let prodottiValidi = 0;
             prodotti.forEach(p => {
                 const nut = p.nutriments || {};
-                const kcal = nut['energy-kcal_100g'];
+                // Verifichiamo la presenza di calorie per renderlo un record valido
+                const kcal = nut['energy-kcal_100g'] || nut['energy-kcal'];
                 
                 if (kcal !== undefined && kcal !== null) {
                     const option = document.createElement('option');
                     
                     option.value = JSON.stringify({
                         kcal: parseFloat(kcal),
-                        grassi: parseFloat(nut['fat_100g'] || 0),
-                        saturi: parseFloat(nut['saturated-fat_100g'] || 0),
-                        carbo: parseFloat(nut['carbohydrates_100g'] || 0),
-                        zuccheri: parseFloat(nut['sugars_100g'] || 0),
-                        proteine: parseFloat(nut['proteins_100g'] || 0),
-                        sale: parseFloat(nut['salt_100g'] || 0)
+                        grassi: parseFloat(nut['fat_100g'] || nut['fat'] || 0),
+                        saturi: parseFloat(nut['saturated-fat_100g'] || nut['saturated-fat'] || 0),
+                        carbo: parseFloat(nut['carbohydrates_100g'] || nut['carbohydrates'] || 0),
+                        zuccheri: parseFloat(nut['sugars_100g'] || nut['sugars'] || 0),
+                        proteine: parseFloat(nut['proteins_100g'] || nut['proteins'] || 0),
+                        sale: parseFloat(nut['salt_100g'] || nut['salt'] || 0)
                     });
 
-                    const nome = p.product_name || 'Alimento generico';
-                    const marca = p.brands || 'Generico';
-                    option.text = `${nome} (${marca}) - ${kcal} kcal/100g`;
+                    const nome = p.product_name_it || p.product_name || 'Alimento';
+                    const marca = p.brands || 'Dato non disponibile';
+                    option.text = `${nome} (${marca}) - ${parseFloat(kcal).toFixed(0)} kcal/100g`;
                     option.dataset.name = nome;
                     select.appendChild(option);
                     prodottiValidi++;
@@ -451,7 +445,7 @@
             });
 
             if(prodottiValidi === 0) {
-                alert("Prodotti individuati, ma mancano i valori nutrizionali.");
+                alert("Alimenti trovati, ma i record non contengono tabelle nutrizionali utilizzabili.");
                 return;
             }
 
@@ -460,7 +454,7 @@
 
         } catch (error) {
             loading.style.display = 'none';
-            alert("Errore di rete: " + error.message);
+            alert("Il database è momentaneamente sovraccarico. Riprova tra pochi secondi premendo nuovamente Cerca.");
         }
     }
 
@@ -477,7 +471,7 @@
         };
 
         document.getElementById('info-prodotto-selezionato').innerText = 
-            `Aggiungi: ${prodottoCorrenteSelezionato.nome} (${prodottoCorrenteSelezionato.nutrienti.kcal} kcal/100g)`;
+            `Selezionato: ${prodottoCorrenteSelezionato.nome} (${prodottoCorrenteSelezionato.nutrienti.kcal.toFixed(0)} kcal/100g)`;
         document.getElementById('weight-section').style.display = 'block';
     }
 
