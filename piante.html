@@ -30,7 +30,7 @@
     h2 {
       margin: 0;
       font-size: 20px;
-      color: #2e7d32; /* Verde Orto */
+      color: #2e7d32;
     }
 
     .home-btn {
@@ -92,6 +92,17 @@
       box-sizing: border-box;
     }
 
+    optgroup {
+      font-weight: bold;
+      color: #2e7d32;
+      background: #f9f9f9;
+    }
+
+    option {
+      color: #333;
+      background: white;
+    }
+
     .diagnostic-result {
       display: none;
       margin-top: 15px;
@@ -146,32 +157,41 @@
   <div class="card lens-box">
     <h3 class="lens-title">📸 Riconoscimento Visivo Istantaneo</h3>
     <p style="margin: 0 0 8px 0; font-size: 13.5px; color: #666;">
-      Per identificare insetti sconosciuti, macchie strane o il nome esatto di una pianta, usa la fotocamera del telefono con il sistema gratuito di Google:
+      Per identificare insetti sconosciuti, macchie strane o funghi sulle tue piante, usa la fotocamera dello smartphone con Google Lens:
     </p>
     <ol>
-      <li>Apri la <strong>Fotocamera</strong> del tuo smartphone.</li>
-      <li>Inquadra la foglia o l'insetto malato.</li>
-      <li>Tocca il piccolo simbolo di <strong>Google Lens</strong> (l'icona a forma di cerchio/quadrato colorato) oppure tieni premuto sullo schermo.</li>
-      <li>Il telefono cercherà visivamente sul web mostrandoti malattie identiche e rimedi immediati.</li>
+      <li>Apri la <strong>Fotocamera</strong> del telefono.</li>
+      <li>Inquadra il problema o la foglia malata.</li>
+      <li>Tocca il simbolo di <strong>Google Lens</strong> (l'icona quadrata colorata) o tieni premuto sullo schermo per analizzare l'immagine gratis.</li>
     </ol>
   </div>
 
   <div class="card">
-    <h3>🔍 Guida Rapida ai Sintomi</h3>
+    <h3>🔍 Guida ai Sintomi delle tue Piante</h3>
     <p style="margin: 0 0 15px 0; font-size: 13.5px; color: #666;">
-      Cosa noti sulla pianta o sugli ortaggi in questo momento? Seleziona il sintomo principale per capire di cosa ha bisogno.
+      Seleziona il problema specifico che stai riscontrando su una delle tue varietà per scoprire cosa fare.
     </p>
 
-    <label for="sintomo-selector">Seleziona il problema visibile:</label>
+    <label for="sintomo-selector">Cosa noti in questo momento?</label>
     <select id="sintomo-selector" onchange="analizzaSintomo()">
-      <option value="">-- Scegli cosa vedi --</option>
-      <option value="foglie-gialle-vecchie">Foglie più vecchie (in basso) che ingialliscono completamente</option>
-      <option value="foglie-gialle-venature">Foglie gialle ma con le venature rimaste ben verdi</option>
-      <option value="punte-secche">Punte o bordi delle foglie marroni e secchi</option>
-      <option value="macchie-polvere-bianca">Polvere bianca (simile a farina) sulle foglie</option>
-      <option value="marciume-apicale">Pomodori con una macchia nera e piatta sul fondo</option>
-      <option value="foglie-appiccicose">Foglie appiccicose piene di minuscoli insetti (verdi/neri)</option>
-      <option value="foglie-mosce">Foglie moscie e cadenti (terra asciutta)</option>
+      <option value="">-- Scegli il sintomo --</option>
+      
+      <optgroup label="🍅 ORTO, ERBE & FRUTTI">
+        <option value="orto-azoto">Ortaggi (Peperoni/Zucchine/Basilico): Foglie basse ingiallite</option>
+        <option value="peperoni-pomodori-nero">Peperoni: Macchia nera e piatta sul fondo del frutto</option>
+        <option value="zucchine-bianco">Zucchine: Polvere bianca (tipo farina) sulle foglie</option>
+        <option value="basilico-fiori">Basilico: Spuntano "spighe/pannocchie" di fiori in cima</option>
+        <option value="fragole-marce">Fragole: I frutti marciscono a terra o ci sono lumache</option>
+        <option value="rosmarino-aghi-neri">Rosmarino: Aghi che diventano neri o marci alla base</option>
+      </optgroup>
+
+      <optgroup label="🪴 PIANTE DA APPARTAMENTO & FIORI">
+        <option value="ficus-foglie-cadono">Ficus Benjamin: Perde tantissime foglie verdi all'improvviso</option>
+        <option value="tronchetto-fusto-molle">Tronchetto della Felicità: Fusto molle o punte delle foglie marroni</option>
+        <option value="aloe-foglie-svuotate">Aloe Vera: Foglie molli, marroni, spugnose o svuotate</option>
+        <option value="monstera-punte-marroni">Monstera: Punte fogliari secche o foglie senza squarci (intere)</option>
+        <option value="roselline-insetti-afidi">Roselline: Boccioli e foglie pieni di piccoli insetti verdi/neri</option>
+      </optgroup>
     </select>
 
     <div id="risultato-diagnosi" class="diagnostic-result"></div>
@@ -190,72 +210,80 @@ function analizzaSintomo() {
     return;
   }
 
-  // Database dei sintomi con cause e soluzioni biologiche
   var diagnosi = {
-    "foglie-gialle-vecchie": {
-      tipo: "carenza",
-      badge: "CARENZA DI NUTRIENTI",
-      coloreBadge: "#d6336c",
-      titolo: "Carenza di Azoto (N)",
-      descrizione: "La pianta sta esaurendo il nutrimento principale per crescere. Toglie energia alle foglie vecchie in basso per darla a quelle nuove in cima.",
-      rimedio: "<strong>Cosa fare:</strong> Somministra un concime organico azotato biologico (es. stallatico pellettato, siero di latte diluito, o un fertilizzante liquido per orto)."
+    // SEZIONE ORTO
+    "orto-azoto": {
+      tipo: "carenza", badge: "CARENZA DI NUTRIENTI", coloreBadge: "#d6336c",
+      titolo: "Mancanza di Azoto (N)",
+      descrizione: "Tipico di peperoni, zucchine e basilico. La pianta esaurisce il nutrimento nel suolo e ingiallisce partendo dalle foglie vecchie in basso.",
+      rimedio: "<strong>Cosa fare:</strong> Somministra un concime biologico ricco di azoto (stallatico pellettato o fertilizzante liquido organico per orto)."
     },
-    "foglie-gialle-venature": {
-      tipo: "carenza",
-      badge: "CARENZA NUTRIZIONALE",
-      coloreBadge: "#d6336c",
-      titolo: "Clorosi Ferrica (Mancanza di Ferro)",
-      descrizione: "La pianta non riesce ad assorbire abbastanza ferro. Spesso succede nei terreni troppo calcarei o a causa di annaffiature con acqua troppo dura (dal rubinetto).",
-      rimedio: "<strong>Cosa fare:</strong> Somministra del ferro chelato (detto anche rinverdente). Per il futuro, prova a bagnare la pianta con acqua piovana o decantata."
+    "peperoni-pomodori-nero": {
+      tipo: "carenza", badge: "SQUILIBRIO IDRICO / CALCIO", coloreBadge: "#d6336c",
+      titolo: "Marciume Apicale del Frutto",
+      descrizione: "I peperoni mostrano una necrosi sul fondo. È causata da una mancanza di Calcio nei frutti, quasi sempre dovuta ad annaffiature irregolari (alternanza secco/troppo bagnato) che bloccano le radici.",
+      rimedio: "<strong>Cosa fare:</strong> Regola le bagnature rendendole costanti. Non far subire shock idrici alla pianta e rimuovi i frutti colpiti."
     },
-    "punte-secche": {
-      tipo: "irrigazione",
-      badge: "ERRORE DI IRRIGAZIONE / CLIMA",
-      coloreBadge: "#22b8cf",
-      titolo: "Bruciatura da vento secco o carenza idrica",
-      descrizione: "L'umidità ambientale è troppo bassa o l'acqua non arriva alle estremità della foglia. Può anche indicare un eccesso di sali/concime nel terreno.",
-      rimedio: "<strong>Cosa fare:</strong> Regola le annaffiature assicurandoti che l'acqua penetri a fondo e pacciama la base della pianta per trattenere l'umidità."
-    },
-    "macchie-polvere-bianca": {
-      tipo: "parassita",
-      badge: "FUNGO / MALATTIA",
-      coloreBadge: "#ff6b6b",
+    "zucchine-bianco": {
+      tipo: "parassita", badge: "FUNGO / MALATTIA", coloreBadge: "#ff6b6b",
       titolo: "Oidio (Mal Bianco)",
-      descrizione: "È una malattia fungina molto comune causata da un mix di forte umidità notturna e caldo diurno (frequente su zucchine, zucche e piante dell'orto).",
-      rimedio: "<strong>Cosa fare:</strong> Elimina le foglie più colpite. Tratta la pianta spruzzando una soluzione di acqua e bicarbonato di sodio (1 cucchiaino per litro) oppure usa dello zolfo ventilato."
+      descrizione: "Le foglie delle zucchine si coprono di una patina bianca farinosa a causa dell'umidità ristagnante combinata al caldo.",
+      rimedio: "<strong>Cosa fare:</strong> Rimuovi le foglie più coperte. Spruzza la sera una soluzione di acqua e bicarbonato di sodio (1 cucchiaino per litro) o zolfo ramato."
     },
-    "marciume-apicale": {
-      tipo: "carenza",
-      badge: "SQUILIBRIO IDRICO / CALCIO",
-      coloreBadge: "#d6336c",
-      titolo: "Marciume Apicale (Il 'Culo Nero' del pomodoro)",
-      descrizione: "Non è una malattia infettiva, ma una carenza di Calcio nei frutti. Succede quasi sempre a causa di annaffiature irregolari (alternanza secco/troppo bagnato) che bloccano il trasporto dei minerali.",
-      rimedio: "<strong>Cosa fare:</strong> Mantieni le annaffiature costanti senza far subire shock idrici alla pianta. Rimuovi i frutti già colpiti (non guariranno)."
+    "basilico-fiori": {
+      tipo: "irrigazione", badge: "MANUTENZIONE PIANTA", coloreBadge: "#22b8cf",
+      titolo: "Fioritura del Basilico",
+      descrizione: "Se il basilico fa i fiori, smette di produrre le foglie e quelle rimaste diventano dure, coriacee e perdono l'aroma tipico.",
+      rimedio: "<strong>Cosa fare:</strong> Taglia via immediatamente le spighe dei fiori (cimatura). Taglia sempre la punta dei rami sopra le foglioline nuove per farlo raddoppiare e diventare a cespuglio."
     },
-    "foglie-appiccicose": {
-      tipo: "parassita",
-      badge: "INFESTAZIONE PARASSITI",
-      coloreBadge: "#ff6b6b",
-      titolo: "Afidi (Pidocchi delle piante)",
-      descrizione: "Piccoli insetti che succhiano la linfa e producono una sostanza zuccherina e appiccicosa (melata) che attira le formiche e può causare funghi neri.",
-      rimedio: "<strong>Cosa fare:</strong> Spruzza la sera del Sapone di Marsiglia liquido diluito in acqua (circa 15-20 grammi per litro) per soffocare i parassiti in modo biologico senza chimica."
+    "fragole-marce": {
+      tipo: "irrigazione", badge: "GESTIONE COLTIVAZIONE", coloreBadge: "#22b8cf",
+      titolo: "Umidità Radicale e Lumache",
+      descrizione: "Le fragole crescono a terra: se toccano il suolo umido marciscono o attirano lumache e formiche.",
+      rimedio: "<strong>Cosa fare:</strong> Isola i frutti dal terreno mettendo della paglia pulita o un telo di pacciamatura sotto le piantine. Annaffia solo la terra, mai i frutti."
     },
-    "foglie-mosce": {
-      tipo: "irrigazione",
-      badge: "DISIDRATAZIONE",
-      coloreBadge: "#22b8cf",
-      titolo: "Carenza d'acqua acuta",
-      descrizione: "Le cellule della pianta hanno perso pressione idrica. Succede nelle ore più calde se il terreno è completamente asciutto.",
-      rimedio: "<strong>Cosa fare:</strong> Irriga abbondantemente alla base della pianta **solo la sera o la mattina presto**. Evita assolutamente di bagnare le foglie sotto il sole cocente."
+    "rosmarino-aghi-neri": {
+      tipo: "irrigazione", badge: "ECCESSO D'ACQUA", coloreBadge: "#22b8cf",
+      titolo: "Asfissia Radicale del Rosmarino",
+      descrizione: "Il rosmarino è una pianta mediterranea: odia l'umidità costante. Se gli aghi diventano neri o marroni partendo dal basso, le radici stanno marcendo.",
+      rimedio: "<strong>Cosa fare:</strong> Sospendi subito le annaffiature. Bagna il rosmarino solo quando la terra è completamente asciutta anche in profondità da diversi giorni."
+    },
+
+    // SEZIONE INTERNO
+    "ficus-foglie-cadono": {
+      tipo: "irrigazione", badge: "SHOCK AMBIENTALE / IDRICO", coloreBadge: "#22b8cf",
+      titolo: "Stress del Ficus Benjamin",
+      descrizione: "Il Ficus è sensibilissimo ai cambiamenti. Se perde fogliame verde sano, le cause sono due: correnti d'aria fredda improvvise oppure un eccesso d'acqua nel sottovaso (ristagno).",
+      rimedio: "<strong>Cosa fare:</strong> Spostalo in una posizione luminosa lontano da correnti d'aria o condizionatori. Svuota sempre il sottovaso dopo 15 minuti dall'irrigazione."
+    },
+    "tronchetto-fusto-molle": {
+      tipo: "irrigazione", badge: "ECCESSO IDRICO GRAVE", coloreBadge: "#22b8cf",
+      titolo: "Marciume del Tronchetto della Felicità",
+      descrizione: "Se le punte sono marroni o il tronco principale diventa morbido alla pressione, la pianta sta ricevendo troppa acqua e poca luce.",
+      rimedio: "<strong>Cosa fare:</strong> Bagna pochissimo (solo quando la terra è polvere). Spostalo vicino a una finestra molto luminosa. Se il fusto è del tutto molle, purtroppo le radici sono compromesse."
+    },
+    "aloe-foglie-svuotate": {
+      tipo: "irrigazione", badge: "GESTIONE SUCCULENTE", coloreBadge: "#22b8cf",
+      titolo: "Problema d'Acqua nell'Aloe",
+      descrizione: "L'Aloe accumula acqua nelle foglie. Se sono molli, marroni e gelatinose c'è un **eccesso d'acqua** (sta marcendo); se sono sottili, accartocciate e svuotate, la pianta ha **troppa sete**.",
+      rimedio: "<strong>Cosa fare:</strong> Se marcisce, svasa e togli le radici nere. Se è secca, bagna a fondo una volta e lascia asciugare completamente."
+    },
+    "monstera-punte-marroni": {
+      tipo: "carenza", badge: "UMIDITÀ AMBIENTALE", coloreBadge: "#d6336c",
+      titolo: "Secchezza Fogliare della Monstera",
+      descrizione: "Le punte marroni e secche indicano che l'aria di casa è troppo secca (termosifoni o aria condizionata). Se le foglie nuove escono piccole e senza i classici 'buchi/squarci', la pianta ha poca luce.",
+      rimedio: "<strong>Cosa fare:</strong> Vaporizza le foglie regolarmente con acqua non calcarea e posizionala in un luogo molto luminoso ma senza sole diretto."
+    },
+    "roselline-insetti-afidi": {
+      tipo: "parassita", badge: "INFESTAZIONE PARASSITI", coloreBadge: "#ff6b6b",
+      titolo: "Afidi delle Rose",
+      descrizione: "I piccoli pidocchi verdi o neri colonizzano i boccioli delle rose bloccando la fioritura e rendendo la pianta appiccicosa.",
+      rimedio: "<strong>Cosa fare:</strong> Spruzza la sera una miscela biologica di acqua e Sapone di Marsiglia liquido (20g per litro). Il sapone pulisce la pianta e soffoca i parassiti senza chimica."
     }
   };
 
   var d = diagnosi[sintomo];
-  
-  // Applica la classe corretta per il bordo colorato (carenza, parassita, irrigazione)
   box.className = "diagnostic-result " + d.tipo;
-  
-  // Costruisce l'HTML dentro la scheda dei risultati
   box.innerHTML = 
     '<span class="badge" style="background-color:' + d.coloreBadge + ';">' + d.badge + '</span>' +
     '<div class="res-title">' + d.titolo + '</div>' +
