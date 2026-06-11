@@ -12,6 +12,7 @@
             --text-color: #333333;
             --calorie-color: #e67e22;
             --proporzioni-color: #2980b9;
+            --piante-color: #2e7d32; /* Colore Verde per la diagnostica piante */
         }
 
         body {
@@ -74,6 +75,10 @@
             border-left-color: var(--proporzioni-color);
         }
 
+        .card-piante {
+            border-left-color: var(--piante-color);
+        }
+
         .icon-wrapper {
             font-size: 32px;
             margin-right: 20px;
@@ -108,6 +113,7 @@
         
         .card-calorie .arrow { color: var(--calorie-color); }
         .card-proporzioni .arrow { color: var(--proporzioni-color); }
+        .card-piante .arrow { color: var(--piante-color); }
     </style>
 </head>
 <body>
@@ -130,6 +136,15 @@
         <div class="info-wrapper">
             <div class="app-title">Bilanciatore Proporzioni</div>
             <div class="app-description">Modifica le proporzioni e ricalcola istantaneamente le dosi di tutti gli ingredienti di una ricetta.</div>
+        </div>
+        <div class="arrow">›</div>
+    </a>
+
+    <a href="piante.html" class="app-card card-piante">
+        <div class="icon-wrapper">🌿</div>
+        <div class="info-wrapper">
+            <div class="app-title">Pronto Soccorso Piante & Orto</div>
+            <div class="app-description">Identifica i problemi di ortaggi e piante tramite guida ai sintomi e strumenti gratuiti di scansione visiva.</div>
         </div>
         <div class="arrow">›</div>
     </a>
