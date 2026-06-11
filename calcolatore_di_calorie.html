@@ -424,7 +424,7 @@
 <script>
     let elencoIngredienti = [];
     let idContatore = 0;
-    let prodottoCorrenteSelezionato = null;
+    let productoCorrenteSelezionato = null;
 
     const gdaUomo = { kcal: 2500, grassi: 95, carbo: 300, proteine: 65, sale: 5 };
     const gdaDonna = { kcal: 2000, grassi: 70, carbo: 260, proteine: 50, sale: 5 };
@@ -479,7 +479,6 @@
             if (isBarcode) {
                 url = `https://it.openfoodfacts.org/api/v2/product/${query}.json`;
             } else {
-                // CORREZIONE CRUCIALE: Usiamo la ricerca testuale libera corretta filtrando i prodotti italiani
                 url = `https://it.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&countries_tags=en:italy&action=process&json=1&page_size=30`;
             }
 
@@ -772,7 +771,7 @@
         }
     }
 
-    function代理 eliminaRicettaLocale(nome) {
+    function eliminaRicettaLocale(nome) {
         if (confirm(`Eliminare definitivamente la ricetta "${nome}"?`)) {
             let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
             delete ricetteSalvate[nome];
