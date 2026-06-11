@@ -8,13 +8,41 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 15px;
+      margin: 0;
+      padding: 15px;
       background: #f5f5f5;
     }
 
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: transparent;
+    }
+
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+    }
+
     h2 {
-      text-align: center;
-      margin-bottom: 5px;
+      margin: 0;
+      font-size: 22px;
+      color: #2c3e50;
+    }
+
+    .home-btn {
+      background-color: #7f8c8d;
+      color: white;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      box-sizing: border-box;
     }
 
     #top-buttons {
@@ -61,6 +89,7 @@
       color: white;
       border: none;
       margin-top: 10px;
+      cursor: pointer;
     }
 
     button:active {
@@ -71,7 +100,6 @@
       background: #ff4444;
     }
     
-    /* Stile per la nuova sezione di richiamo */
     .import-box {
       background: #e8f4fd;
       border: 1px solid #b3d7f7;
@@ -81,57 +109,60 @@
 
 <body>
 
-<h2>Proporzioni</h2>
+<div class="container">
 
-<div id="top-buttons">
-  <button onclick="pulisciTutto()">Pulisci tutto</button>
-  <button onclick="salvaConfigurazione()">Salva</button>
-</div>
+  <div class="header-nav">
+    <h2>Proporzioni</h2>
+    <a href="index.html" class="home-btn">🏠 Home</a>
+  </div>
 
-<div class="card import-box" id="ricette-salvate-card" style="display: none;">
-  <h3>📂 Richiama Ricetta Salvata</h3>
-  <label>Seleziona una ricetta dal calcolatore:</label>
-  <select id="ricetta-selector" onchange="importaRicettaCalcolatore()">
-    <option value="">-- Scegli una ricetta --</option>
-  </select>
-</div>
+  <div id="top-buttons">
+    <button onclick="pulisciTutto()">Pulisci tutto</button>
+    <button onclick="salvaConfigurazione()" style="background: #e67e22;">Salva</button>
+  </div>
 
-<div class="card">
-  <h3>Voci</h3>
+  <div class="card import-box" id="ricette-salvate-card" style="display: none;">
+    <h3>📂 Richiama Ricetta Salvata</h3>
+    <label>Seleziona una ricetta dal calcolatore:</label>
+    <select id="ricetta-selector" onchange="importaRicettaCalcolatore()">
+      <option value="">-- Scegli una ricetta --</option>
+    </select>
+  </div>
 
-  <div id="voci"></div>
+  <div class="card">
+    <h3>Voci</h3>
+    <div id="voci"></div>
+    <button onclick="aggiungiVoce()">+ Aggiungi voce</button>
+  </div>
 
-  <button onclick="aggiungiVoce()">+ Aggiungi voce</button>
-</div>
+  <div class="card">
+    <h3>Modifica proporzioni</h3>
+    <label>Voce da modificare:</label>
+    <select id="modIndex"></select>
+    <label>Nuovo valore:</label>
+    <input id="nuovoValore" type="number" placeholder="Es. 150">
+    <button onclick="ricalcola()">Ricalcola</button>
+  </div>
 
-<div class="card">
-  <h3>Modifica proporzioni</h3>
+  <div class="card">
+    <h3>Risultato</h3>
+    <div id="risultato"></div>
+  </div>
 
-  <label>Voce da modificare:</label>
-  <select id="modIndex"></select>
-
-  <label>Nuovo valore:</label>
-  <input id="nuovoValore" type="number" placeholder="Es. 150">
-
-  <button onclick="ricalcola()">Ricalcola</button>
-</div>
-
-<div class="card">
-  <h3>Risultato</h3>
-  <div id="risultato"></div>
 </div>
 
 <script>
 var count = 0;
+var ricettaAttivaDettagli = null; // Memorizza la struttura dei macronutrienti originari
 
-// Esegui il controllo del localStorage all'avvio della pagina
 window.onload = function() {
   mappaRicetteCalcolatore();
 };
 
-// Cerca le ricette salvate dal calcolatore nel localStorage condiviso
 function mappaRicetteCalcolatore() {
   var selector = document.getElementById("ricetta-selector");
+  // Reset del selettore mantenendo solo la prima opzione vuota
+  selector.innerHTML = '<option value="">-- Scegli una ricetta --</option>';
   var cardIniziale = document.getElementById("ricette-salvate-card");
   var ricette = {};
 
@@ -144,32 +175,37 @@ function mappaRicetteCalcolatore() {
   var chiavi = Object.keys(ricette);
 
   if (chiavi.length > 0) {
-    cardIniziale.style.display = "block"; // Mostra la card solo se ci sono ricette
+    cardIniziale.style.display = "block";
     chiavi.forEach(function(nome) {
       var opt = document.createElement("option");
       opt.value = nome;
       opt.textContent = nome;
       selector.appendChild(opt);
     });
+  } else {
+    cardIniziale.style.display = "none";
   }
 }
 
-// Prende la ricetta selezionata e popola i campi "Voci" del tuo script
 function importaRicettaCalcolatore() {
   var nomeSelezionato = document.getElementById("ricetta-selector").value;
-  if (!nomeSelezionato) return;
+  if (!nomeSelezionato) {
+    ricettaAttivaDettagli = null;
+    return;
+  }
 
   var ricette = JSON.parse(localStorage.getItem("ricette_calorie")) || {};
   var ingredienti = ricette[nomeSelezionato];
 
   if (ingredienti && ingredienti.length > 0) {
-    // Svuota i campi correnti prima di inserire i nuovi
     document.getElementById("voci").innerHTML = "";
     document.getElementById("risultato").innerHTML = "";
     document.getElementById("nuovoValore").value = "";
     count = 0;
 
-    // Cicla gli ingredienti e usa la tua funzione nativa aggiungiVoce()
+    // Salviamo una copia locale temporanea per non perdere le proprietà dei macro durante il ricalcolo
+    ricettaAttivaDettagli = JSON.parse(JSON.stringify(ingredienti));
+
     ingredienti.forEach(function(ing) {
       aggiungiVoce(ing.nome, ing.peso);
     });
@@ -188,10 +224,11 @@ function aggiungiVoce(nome, valore) {
 
   card.innerHTML =
     '<label>Nome:</label>' +
-    '<input type="text" id="nome' + count + '" value="' + nome + '" placeholder="Nome">' +
+    '<input type="text" id="nome' + count + '" value="' + nome + '" placeholder="Nome" oninput="aggiornaSelect()">' +
     '<label>Valore:</label>' +
-    '<input type="number" id="valore' + count + '" value="' + valore + '" placeholder="Valore">' +
-    '<button class="remove-btn" onclick="rimuoviVoce(' + count + ')">Rimuovi</button>';
+    '<input type="number" id="valore' + count + '" value="' + valore + '" placeholder="Valore">';
+
+  card.innerHTML += '<button class="remove-btn" onclick="rimuoviVoce(' + count + ')">Rimuovi</button>';
 
   container.appendChild(card);
   count++;
@@ -206,6 +243,7 @@ function rimuoviVoce(i) {
 
 function aggiornaSelect() {
   var sel = document.getElementById("modIndex");
+  var valorePrecedente = sel.value;
   sel.innerHTML = "";
 
   var cards = document.querySelectorAll(".voce-card");
@@ -218,6 +256,9 @@ function aggiornaSelect() {
     opt.value = id;
     opt.textContent = nome;
     sel.appendChild(opt);
+  }
+  if (valorePrecedente !== "") {
+    sel.value = valorePrecedente;
   }
 }
 
@@ -244,7 +285,7 @@ function ricalcola() {
     var valore = parseFloat(document.getElementById("valore" + id).value);
 
     if (isNaN(valore) || valore <= 0) {
-      alert("Tutti i valori devono essere numeri maiores di zero.");
+      alert("Tutti i valori devono essere numeri maggiori di zero.");
       return;
     }
 
@@ -263,6 +304,16 @@ function ricalcola() {
 
   var vecchio = valori[pos];
   var rapporto = nuovo / vecchio;
+
+  // Aggiorna visivamente i valori degli input delle voci a schermo
+  for (var k = 0; k < cards.length; k++) {
+    var currentId = cards[k].getAttribute("data-index");
+    var inputValore = document.getElementById("valore" + currentId);
+    var vecchioValoreSingolo = parseFloat(inputValore.value);
+    var nuovoValoreSingolo = vecchioValoreSingolo * rapporto;
+    
+    inputValore.value = nuovoValoreSingolo.toFixed(1);
+  }
 
   var nuoviValori = [];
   for (var k = 0; k < valori.length; k++) {
@@ -288,45 +339,90 @@ function mostraRisultato(nomi, valori) {
       valori[j].toFixed(2) + " (" + perc.toFixed(2) + "%)<br>";
   }
 
-  div.innerHTML += "<br><strong>Totale:</strong> " + totale.toFixed(2);
+  div.innerHTML += "<br><strong>Totale complessivo:</strong> " + totale.toFixed(2);
 }
 
 function pulisciTutto() {
   document.getElementById("voci").innerHTML = "";
   document.getElementById("risultato").innerHTML = "";
   document.getElementById("nuovoValore").value = "";
-  document.getElementById("ricetta-selector").value = "";
+  var sel = document.getElementById("ricetta-selector");
+  if(sel) sel.value = "";
+  ricettaAttivaDettagli = null;
   count = 0;
   aggiornaSelect();
 }
 
+/* ----------------------------------------------------
+   NUOVA FUNZIONE DI SALVATAGGIO (STILE CALCOLATORE)
+---------------------------------------------------- */
 function salvaConfigurazione() {
-  var titolo = prompt("Nome del file da salvare:");
-  if (!titolo) return;
-
   var cards = document.querySelectorAll(".voce-card");
-  var dati = [];
+  if (cards.length === 0) {
+    alert("Nessun ingrediente inserito da salvare.");
+    return;
+  }
+
+  var ricetteSalvate = JSON.parse(localStorage.getItem("ricette_calorie")) || {};
+  var nomeSelezionatoSelector = document.getElementById("ricetta-selector").value;
+  var nomeDefinitivoRicetta = "";
+
+  // Stabilisce se stiamo sovrascrivendo una ricetta esistente o creandone una nuova
+  if (nomeSelezionatoSelector) {
+    nomeDefinitivoRicetta = nomeSelezionatoSelector;
+  } else {
+    var promptNome = prompt("Inserisci il nome della ricetta da salvare (stile calcolatore):");
+    if (!promptNome || promptNome.trim() === "") return;
+    nomeDefinitivoRicetta = promptNome.trim();
+  }
+
+  var nuovoElencoIngredienti = [];
 
   for (var i = 0; i < cards.length; i++) {
     var id = cards[i].getAttribute("data-index");
-    dati.push({
-      nome: document.getElementById("nome" + id).value,
-      valore: document.getElementById("valore" + id).value
+    var nomeIng = document.getElementById("nome" + id).value;
+    var pesoIng = parseFloat(document.getElementById("valore" + id).value) || 0;
+
+    // Se la voce deriva dal calcolatore, ricalcoliamo in proporzione anche i macro originali (kcal, proteine, ecc)
+    var kcal = 0, grassi = 0, saturi = 0, carbo = 0, zuccheri = 0, proteine = 0, sale = 0;
+    
+    if (ricettaAttivaDettagli && ricettaAttivaDettagli[i]) {
+      var vecchioPeso = ricettaAttivaDettagli[i].peso;
+      var fattoreScala = vecchioPeso > 0 ? (pesoIng / vecchioPeso) : 1;
+      
+      kcal = (ricettaAttivaDettagli[i].kcal || 0) * fattoreScala;
+      grassi = (ricettaAttivaDettagli[i].grassi || 0) * fattoreScala;
+      saturi = (ricettaAttivaDettagli[i].saturi || 0) * fattoreScala;
+      carbo = (ricettaAttivaDettagli[i].carbo || 0) * fattoreScala;
+      zuccheri = (ricettaAttivaDettagli[i].zuccheri || 0) * fattoreScala;
+      proteine = (ricettaAttivaDettagli[i].proteine || 0) * fattoreScala;
+      sale = (ricettaAttivaDettagli[i].sale || 0) * fattoreScala;
+    }
+
+    nuovoElencoIngredienti.push({
+      id: i,
+      nome: nomeIng,
+      peso: pesoIng,
+      kcal: kcal,
+      grassi: grassi,
+      saturi: saturi,
+      carbo: carbo,
+      zuccheri: zuccheri,
+      proteine: proteine,
+      sale: sale
     });
   }
 
-  var contenuto = JSON.stringify(dati, null, 2);
-  var blob = new Blob([contenuto], { type: "application/json" });
-  var url = URL.createObjectURL(blob);
+  // Salva nel database comune del browser
+  ricetteSalvate[nomeDefinitivoRicetta] = nuovoElencoIngredienti;
+  localStorage.setItem("ricette_calorie", JSON.stringify(ricetteSalvate));
 
-  var a = document.createElement("a");
-  a.href = url;
-  a.download = titolo + ".json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
+  alert('Ricetta "' + nomeDefinitivoRicetta + '" aggiornata e memorizzata sul dispositivo.');
+  
+  // Aggiorna la tendina delle ricette senza resettare la pagina
+  mappaRicetteCalcolatore();
+  document.getElementById("ricetta-selector").value = nomeDefinitivoRicetta;
+  importaRicettaCalcolatore();
 }
 </script>
 
