@@ -251,7 +251,6 @@
             color: var(--primary-color);
         }
 
-        /* Nuova sezione per il salvataggio locale */
         .storage-section {
             margin-top: 20px;
             background: #fcf3e8;
@@ -315,7 +314,7 @@
     
     <div class="header-nav">
         <h1>Calcolatore & Scanner</h1>
-        <a href="proporzioni%201.6.html" class="home-btn">🏠 Home</a>
+        <a href="index.html" class="home-btn">🏠 Home</a>
     </div>
 
     <div>
@@ -423,7 +422,6 @@
     const gdaUomo = { kcal: 2500, grassi: 95, carbo: 300, proteine: 65, sale: 5 };
     const gdaDonna = { kcal: 2000, grassi: 70, carbo: 260, proteine: 50, sale: 5 };
 
-    // Al caricamento della pagina mostra le eventuali ricette salvate precedentemente
     window.onload = function() {
         mostraRicetteSalvate();
     };
@@ -474,10 +472,9 @@
                 ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
                 : `https://world.openfoodfacts.org/api/v2/search?text=${encodeURIComponent(query)}&cc=it&lc=it&fields=product_name,brands,nutriments&page_size=24`;
 
-            // MODIFICA FETCH: Aggiunta degli header User-Agent per autenticare l'app ed evitare blocchi
             const response = await fetch(url, {
                 headers: {
-                    'User-Agent': 'CalcolatoreCalorieApp - WebApp - Versione1.1 - https://github.com/'
+                    'User-Agent': 'CalcolatoreCalorieApp - WebApp - Versione1.2 - https://github.com/'
                 }
             });
 
@@ -486,7 +483,7 @@
             const data = await response.json();
             loading.style.display = 'none';
 
-            let prodotti = [];
+            let招prodotti = [];
             if (isBarcode && data.status === 1 && data.product) {
                 prodotti.push(data.product);
             } else if (!isBarcode && data.products && data.products.length > 0) {
@@ -696,7 +693,6 @@
         wrapperRisultati.style.display = 'block';
     }
 
-    // FUNZIONI DI GESTIONE LOCALSTORAGE
     function salvaRicettaInLocale() {
         const nomeInput = document.getElementById('recipe-name-input');
         const nomeRicetta = nomeInput.value.trim();
@@ -708,10 +704,8 @@
             return alert("Aggiungi almeno un ingrediente alla ricetta prima di salvarla.");
         }
 
-        // Recuperiamo il dizionario delle ricette esistenti
         let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
         
-        // Salviamo la lista ingredienti associandola al nome ricetta
         ricetteSalvate[nomeRicetta] = elencoIngredienti;
         localStorage.setItem('ricette_calorie', JSON.stringify(ricetteSalvate));
 
@@ -754,7 +748,6 @@
         if (ricetteSalvate[nome]) {
             elencoIngredienti = ricetteSalvate[nome];
             
-            // Trova l'id massimo presente per impostare correttamente il contatore interno
             let maxId = -1;
             elencoIngredienti.forEach(ing => { if(ing.id > maxId) maxId = ing.id; });
             idContatore = maxId + 1;
@@ -764,7 +757,7 @@
         }
     }
 
-    function eliminaRicettaLocale(nome) {
+    functionBox = function eliminaRicettaLocale(nome) {
         if (confirm(`Sei sicuro di voler eliminare definitivamente "${nome}" da questo dispositivo?`)) {
             let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
             delete ricetteSalvate[nome];
