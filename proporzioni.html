@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Proporzioni 1.4</title>
+  <title>Proporzioni</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -12,9 +12,35 @@
       background: #f5f5f5;
     }
 
+    /* Struttura dell'intestazione allineata all'app calorie */
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
     h2 {
-      text-align: center;
-      margin-bottom: 5px;
+      margin: 0;
+      font-size: 20px;
+      color: #2c3e50;
+    }
+
+    .home-btn {
+      background-color: #7f8c8d;
+      color: white;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #top-buttons {
@@ -89,7 +115,10 @@
 
 <body>
 
-<h2>Proporzioni</h2>
+<div class="header-nav">
+  <h2>Proporzioni</h2>
+  <a href="index.html" class="home-btn">🏠 Home</a>
+</div>
 
 <div id="top-buttons">
   <button onclick="pulisciTutto()">Pulisci tutto</button>
@@ -141,10 +170,11 @@ function aggiungiVoce(nome, valore) {
 
   card.innerHTML =
     '<label>Nome:</label>' +
-    '<input type="text" id="nome' + count + '" value="' + nome + '" placeholder="Nome">' +
+    '<input type="text" id="nome' + count + '" value="' + nome + '" placeholder="Nome" oninput="aggiornaSelect()">' +
     '<label>Valore:</label>' +
-    '<input type="number" id="valore' + count + '" value="' + valore + '" placeholder="Valore">' +
-    '<button class="remove-btn" onclick="rimuoviVoce(' + count + ')">Rimuovi</button>';
+    '<input type="number" id="valore' + count + '" value="' + valore + '" placeholder="Valore">';
+
+  card.innerHTML += '<button class="remove-btn" onclick="rimuoviVoce(' + count + ')">Rimuovi</button>';
 
   container.appendChild(card);
   count++;
@@ -197,7 +227,7 @@ function ricalcola() {
     var valore = parseFloat(document.getElementById("valore" + id).value);
 
     if (isNaN(valore) || valore <= 0) {
-      alert("Tutti i valori devono essere numeri maggiori di zero.");
+      alert("Tutti i valori devono essere numeri maiores di zero.");
       return;
     }
 
@@ -207,57 +237,4 @@ function ricalcola() {
 
   var pos = -1;
   for (var j = 0; j < cards.length; j++) {
-    if (cards[j].getAttribute("data-index") == index) pos = j;
-  }
-  if (pos === -1) {
-    alert("Voce selezionata non trovata.");
-    return;
-  }
-
-  var vecchio = valori[pos];
-  var rapporto = nuovo / vecchio;
-
-  var nuoviValori = [];
-  for (var k = 0; k < valori.length; k++) {
-    nuoviValori.push(valori[k] * rapporto);
-  }
-
-  mostraRisultato(nomi, nuoviValori);
-}
-
-function mostraRisultato(nomi, valori) {
-  var div = document.getElementById("risultato");
-  div.innerHTML = "";
-
-  var totale = 0;
-  for (var i = 0; i < valori.length; i++) {
-    totale += valori[i];
-  }
-
-  var titolo = document.getElementById("titoloRicetta").value;
-  if (titolo && titolo.trim() !== "") {
-    div.innerHTML += "<h3>" + titolo + "</h3>";
-  }
-
-  for (var j = 0; j < nomi.length; j++) {
-    var perc = (valori[j] / totale) * 100;
-    div.innerHTML +=
-      "<strong>" + nomi[j] + "</strong>: " +
-      valori[j].toFixed(2) + " (" + perc.toFixed(2) + "%)<br>";
-  }
-
-  div.innerHTML += "<br><strong>Totale:</strong> " + totale.toFixed(2);
-}
-
-function pulisciTutto() {
-  document.getElementById("voci").innerHTML = "";
-  document.getElementById("risultato").innerHTML = "";
-  document.getElementById("nuovoValore").value = "";
-  document.getElementById("titoloRicetta").value = "";
-  count = 0;
-  aggiornaSelect();
-}
-</script>
-
-</body>
-</html>
+    if (cards[j].getAttribute("data-index
