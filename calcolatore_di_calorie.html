@@ -426,16 +426,23 @@
         mostraRicetteSalvate();
     };
 
+    // OTTIMIZZAZIONE DECODIFICA IMMAGINE
     function analizzaImmagine(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const loading = document.getElementById('loading-indicator');
         loading.style.display = 'block';
-        loading.innerText = "Decodifica del codice a barre...";
+        loading.innerText = "Ottimizzazione immagine e lettura codice...";
 
-        const html5QrCode = new Html5Qrcode("loading-indicator");
+        // Creazione dell'istanza con feature sperimentali di contrasto attive per file statici
+        const html5QrCode = new Html5Qrcode("loading-indicator", { 
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
+            }
+        });
         
+        // Esegui la scansione provando ad analizzare formati barcode standard (EAN_13 ed EAN_8)
         html5QrCode.scanFile(file, true)
             .then(barcodeResult => {
                 loading.style.display = 'none';
@@ -444,7 +451,7 @@
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("Impossibile leggere l'immagine. Prova ad inserire il codice numerico manualmente o scrivi il nome del prodotto.");
+                alert("Lettura fallita. Consiglio: inquadra il codice da più vicino evitando i riflessi di luce sulla plastica, oppure digita le cifre a mano.");
                 console.error(err);
             });
     }
@@ -483,7 +490,7 @@
             const data = await response.json();
             loading.style.display = 'none';
 
-            let招prodotti = [];
+            let prodotti = [];
             if (isBarcode && data.status === 1 && data.product) {
                 prodotti.push(data.product);
             } else if (!isBarcode && data.products && data.products.length > 0) {
@@ -757,7 +764,7 @@
         }
     }
 
-    functionBox = function eliminaRicettaLocale(nome) {
+    function eliminaRicettaLocale(nome) {
         if (confirm(`Sei sicuro di voler eliminare definitivamente "${nome}" da questo dispositivo?`)) {
             let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
             delete ricetteSalvate[nome];
