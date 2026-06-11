@@ -148,21 +148,44 @@
         }
 
         .ingredient-item {
-            padding: 10px 0;
+            padding: 10px;
             border-bottom: 1px solid #eee;
             font-size: 14px;
+            background: #fafafa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .ingredient-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .ingredient-main {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .ingredient-title {
             font-weight: bold;
+            color: var(--primary-color);
         }
 
         .ingredient-details {
             font-size: 12px;
             color: #666;
             margin-top: 3px;
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            margin-top: 0;
+            margin-left: 10px;
         }
 
         /* Tabella Riepilogo Valori Totali */
@@ -177,17 +200,53 @@
         .macro-row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
+            padding: 5px 0;
             border-bottom: 1px dashed #ffd180;
         }
 
         .macro-row:last-child {
             border-bottom: none;
+        }
+
+        .macro-row.highlight-top {
             font-size: 18px;
             font-weight: bold;
             color: #d35400;
-            margin-top: 5px;
-            padding-top: 5px;
+            border-bottom: 2px solid #ffd180;
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+        }
+
+        /* Nuova Sezione Consumo Porzione */
+        .portion-section {
+            margin-top: 25px;
+            border-top: 2px dashed #ccc;
+            padding-top: 20px;
+        }
+
+        .portion-card {
+            background: #f0f7f4;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #c2e0d1;
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .comp-table th, .comp-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid #d0e6dc;
+        }
+
+        .comp-table th {
+            background-color: #e1efe9;
+            color: var(--primary-color);
         }
     </style>
 </head>
@@ -230,22 +289,70 @@
         <div id="lista-ingredienti"></div>
         
         <div class="total-macros-box">
-            <h4 style="margin: 0 0 8px 0; color: #d35400; font-size: 15px;">Valori Nutrizionali Totali:</h4>
+            <h4 style="margin: 0 0 8px 0; color: #d35400; font-size: 15px;">Valori Nutrizionali Totali Ricetta:</h4>
+            <div class="macro-row highlight-top"><span>Energia Totale:</span> <span id="totale-calorie">0.0</span> kcal</div>
             <div class="macro-row"><span>Grassi:</span> <span id="tot-grassi">0.0</span> g</div>
             <div class="macro-row"><span>di cui Saturi:</span> <span id="tot-saturi">0.0</span> g</div>
             <div class="macro-row"><span>Carboidrati:</span> <span id="tot-carbo">0.0</span> g</div>
             <div class="macro-row"><span>di cui Zuccheri:</span> <span id="tot-zuccheri">0.0</span> g</div>
             <div class="macro-row"><span>Proteine:</span> <span id="tot-proteine">0.0</span> g</div>
             <div class="macro-row"><span>Sale:</span> <span id="tot-sale">0.0</span> g</div>
-            <div class="macro-row"><span>Energia Totale:</span> <span id="totale-calorie">0.0</span> kcal</div>
+            <div class="macro-row" style="font-size: 12px; color: #7f8c8d; border: none; padding-top: 5px;">
+                <span>Peso totale ingredienti:</span> <span><span id="peso-totale-ricetta">0</span> g</span>
+            </div>
         </div>
     </div>
+
+    <div class="portion-section">
+        <div class="portion-card">
+            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #27ae60;">Quanto ne mangerai?</h3>
+            <p style="margin: 0 0 10px 0; font-size: 13px; color: #555;">Inserisci il peso della porzione che intendi consumare per calcolare l'assunzione reale.</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="portion-input" placeholder="Peso porzione (g)" oninput="calcolaPorzione()">
+            </div>
+
+            <div id="portion-results" style="display: none; margin-top: 15px;">
+                <h4 style="margin: 0 0 5px 0; font-size: 14px; color: var(--primary-color);">Valori Assunti nella Porzione:</h4>
+                <div style="font-size: 13px; margin-bottom: 10px; background: white; padding: 8px; border-radius: 6px; border: 1px solid #d0e6dc;">
+                    <strong>Energia:</strong> <span id="p-kcal">0</span> kcal | 
+                    <strong>G:</strong> <span id="p-grassi">0</span>g | 
+                    <strong>C:</strong> <span id="p-carbo">0</span>g | 
+                    <strong>P:</strong> <span id="p-proteine">0</span>g | 
+                    <strong>S:</strong> <span id="p-sale">0</span>g
+                </div>
+
+                <h4 style="margin: 10px 0 5px 0; font-size: 13px; color: var(--primary-color);">% del Fabbisogno Giornaliero (GDA):</h4>
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th>Nutriente</th>
+                            <th>Uomo (2500 kcal)</th>
+                            <th>Donna (2000 kcal)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Energia (kcal)</td><td id="pct-u-kcal">-</td><td id="pct-d-kcal">-</td></tr>
+                        <tr><td>Grassi (g)</td><td id="pct-u-grassi">-</td><td id="pct-d-grassi">-</td></tr>
+                        <tr><td>Carboidrati (g)</td><td id="pct-u-carbo">-</td><td id="pct-d-carbo">-</td></tr>
+                        <tr><td>Proteine (g)</td><td id="pct-u-proteine">-</td><td id="pct-d-proteine">-</td></tr>
+                        <tr><td>Sale (g)</td><td id="pct-u-sale">-</td><td id="pct-d-sale">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // Registro dei totali cumulativi della ricetta
-    let totaliRicetta = { kcal: 0, grassi: 0, saturi: 0, carbo: 0, zuccheri: 0, proteine: 0, sale: 0 };
+    // Array per memorizzare l'elenco degli ingredienti aggiunti
+    let elencoIngredienti = [];
+    let idContatore = 0;
     let prodottoCorrenteSelezionato = null;
+
+    // Linee guida fabbisogno giornaliero standard adulto (GDA)
+    const gdaUomo = { kcal: 2500, grassi: 95, carbo: 300, proteine: 65, sale: 5 };
+    const gdaDonna = { kcal: 2000, grassi: 70, carbo: 260, proteine: 50, sale: 5 };
 
     async function avviaRicercaTesto() {
         const query = document.getElementById('search-input').value.trim();
@@ -308,7 +415,6 @@
             if (kcal !== undefined && kcal !== null) {
                 const option = document.createElement('option');
                 
-                // Salviamo l'intera mappa dei nutrienti in formato testo per recuperarla al cambio opzione
                 option.value = JSON.stringify({
                     kcal: parseFloat(kcal),
                     grassi: parseFloat(nut['fat_100g'] || 0),
@@ -364,54 +470,147 @@
         const fattore = grammi / 100;
         const n = prodottoCorrenteSelezionato.nutrienti;
 
-        // Calcolo valori proporzionali per questo ingrediente
-        const ingKcal = n.kcal * fattore;
-        const ingGrassi = n.grassi * fattore;
-        const ingSaturi = n.saturi * fattore;
-        const ingCarbo = n.carbo * fattore;
-        const ingZuccheri = n.zuccheri * fattore;
-        const ingProteine = n.proteine * fattore;
-        const ingSale = n.sale * fattore;
+        // Creazione dell'oggetto ingrediente con i valori calcolati
+        const nuovoIngrediente = {
+            id: idContatore++,
+            nome: prodottoCorrenteSelezionato.nome,
+            peso: grammi,
+            kcal: n.kcal * fattore,
+            grassi: n.grassi * fattore,
+            saturi: n.saturi * fattore,
+            carbo: n.carbo * fattore,
+            zuccheri: n.zuccheri * fattore,
+            proteine: n.proteine * fattore,
+            sale: n.sale * fattore
+        };
 
-        // Aggiornamento dei totali generali della ricetta
-        totaliRicetta.kcal += ingKcal;
-        totaliRicetta.grassi += ingGrassi;
-        totaliRicetta.saturi += ingSaturi;
-        totaliRicetta.carbo += ingCarbo;
-        totaliRicetta.zuccheri += ingZuccheri;
-        totaliRicetta.proteine += ingProteine;
-        totaliRicetta.sale += ingSale;
+        elencoIngredienti.push(nuovoIngrediente);
+        
+        // Ridisegna l'interfaccia e ricalcola i totali
+        aggiornaVisualizzazione();
 
-        // Creazione visiva dell'ingrediente con il sotto-riepilogo dei dettagli micro
-        const lista = document.getElementById('lista-ingredienti');
-        const item = document.createElement('div');
-        item.className = 'ingredient-item';
-        item.innerHTML = `
-            <div class="ingredient-main">
-                <span>🔹 ${prodottoCorrenteSelezionato.nome} (${grammi}g)</span>
-                <span>+${ingKcal.toFixed(1)} kcal</span>
-            </div>
-            <div class="ingredient-details">
-                G: ${ingGrassi.toFixed(1)}g | C: ${ingCarbo.toFixed(1)}g | P: ${ingProteine.toFixed(1)}g
-            </div>
-        `;
-        lista.appendChild(item);
-
-        // Aggiornamento della tabella dei totali a schermo
-        document.getElementById('tot-grassi').innerText = totaliRicetta.grassi.toFixed(1);
-        document.getElementById('tot-saturi').innerText = totaliRicetta.saturi.toFixed(1);
-        document.getElementById('tot-carbo').innerText = totaliRicetta.carbo.toFixed(1);
-        document.getElementById('tot-zuccheri').innerText = totaliRicetta.zuccheri.toFixed(1);
-        document.getElementById('tot-proteine').innerText = totaliRicetta.proteine.toFixed(1);
-        document.getElementById('tot-sale').innerText = totaliRicetta.sale.toFixed(2);
-        document.getElementById('totale-calorie').innerText = totaliRicetta.kcal.toFixed(1);
-
-        // Reset campi di input
+        // Reset campi di ricerca
         pesoInput.value = '';
         document.getElementById('weight-section').style.display = 'none';
         document.getElementById('results-wrapper').style.display = 'none';
         document.getElementById('search-input').value = '';
         document.getElementById('barcode-file-input').value = ''; 
+    }
+
+    // Funzione per eliminare l'ingrediente e aggiornare istantaneamente la tabella
+    function eliminaIngrediente(id) {
+        elencoIngredienti = elencoIngredienti.filter(item => item.id !== id);
+        aggiornaVisualizzazione();
+    }
+
+    // Ricalcola i macro totali e aggiorna la lista visiva degli ingredienti
+    function aggiornaVisualizzazione() {
+        const lista = document.getElementById('lista-ingredienti');
+        lista.innerHTML = '';
+
+        let totali = { kcal: 0, grassi: 0, saturi: 0, carbo: 0, zuccheri: 0, proteine: 0, sale: 0, peso: 0 };
+
+        elencoIngredienti.forEach(ing => {
+            totali.kcal += ing.kcal;
+            totali.grassi += ing.grassi;
+            totali.saturi += ing.saturi;
+            totali.carbo += ing.carbo;
+            totali.zuccheri += ing.zuccheri;
+            totali.proteine += ing.proteine;
+            totali.sale += ing.sale;
+            totali.peso += ing.peso;
+
+            // Creazione riga ingrediente con pulsante elimina e indicatore Sale (S) in piccolo
+            const item = document.createElement('div');
+            item.className = 'ingredient-item';
+            item.innerHTML = `
+                <div class="ingredient-row">
+                    <div class="ingredient-main">
+                        <span class="ingredient-title">🔹 ${ing.nome} (${ing.peso}g)</span>
+                        <div class="ingredient-details">
+                            G: ${ing.grassi.toFixed(1)}g | C: ${ing.carbo.toFixed(1)}g | P: ${ing.proteine.toFixed(1)}g | S: ${ing.sale.toFixed(2)}g
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-size:13px; font-weight:bold; color:#7f8c8d; margin-right:5px;">+${ing.kcal.toFixed(1)} kcal</span>
+                        <button class="btn-delete" onclick="eliminaIngrediente(${ing.id})">Elimina</button>
+                    </div>
+                </div>
+            `;
+            lista.appendChild(item);
+        });
+
+        // Aggiornamento Tabella Nutrizionale Principale della ricetta
+        document.getElementById('totale-calorie').innerText = totali.kcal.toFixed(1);
+        document.getElementById('tot-grassi').innerText = totaliCalculato = totali.grassi.toFixed(1);
+        document.getElementById('tot-saturi').innerText = totali.saturi.toFixed(1);
+        document.getElementById('tot-carbo').innerText = totali.carbo.toFixed(1);
+        document.getElementById('tot-zuccheri').innerText = totali.zuccheri.toFixed(1);
+        document.getElementById('tot-proteine').innerText = totali.proteine.toFixed(1);
+        document.getElementById('tot-sale').innerText = totali.sale.toFixed(2);
+        document.getElementById('peso-totale-ricetta').innerText = totali.peso.toFixed(0);
+
+        // Aggiorna anche i conti della porzione se l'utente ha inserito dei grammi nel box in basso
+        calcolaPorzione();
+    }
+
+    // NUOVA FUNZIONE: Calcolo proporzionale porzione consumata + Percentuali Fabbisogno Uomo/Donna
+    function calcolaPorzione() {
+        const portionInput = document.getElementById('portion-input');
+        const wrapperRisultati = document.getElementById('portion-results');
+        const grammiPorzione = parseFloat(portionInput.value);
+
+        // Calcoliamo il peso totale della ricetta attuale
+        let pesoTotaleRicetta = 0;
+        let totali = { kcal: 0, grassi: 0, carbo: 0, proteine: 0, sale: 0 };
+
+        elencoIngredienti.forEach(ing => {
+            pesoTotaleRicetta += ing.peso;
+            totali.kcal += ing.kcal;
+            totali.grassi += ing.grassi;
+            totali.carbo += ing.carbo;
+            totali.proteine += ing.proteine;
+            totali.sale += ing.sale;
+        });
+
+        if (isNaN(grammiPorzione) || grammiPorzione <= 0 || pesoTotaleRicetta === 0) {
+            wrapperRisultati.style.display = 'none';
+            return;
+        }
+
+        // Fattore di scala tra la porzione mangiata e il totale della ricetta prodotta
+        const fattorePorzione = grammiPorzione / pesoTotaleRicetta;
+
+        const pKcal = totali.kcal * fattorePorzione;
+        const pGrassi = totali.grassi * fattorePorzione;
+        const pCarbo = totali.carbo * fattorePorzione;
+        const pProteine = totali.proteine * fattorePorzione;
+        const pSale = totali.sale * fattorePorzione;
+
+        // Scrittura dei valori assoluti della porzione
+        document.getElementById('p-kcal').innerText = pKcal.toFixed(1);
+        document.getElementById('p-grassi').innerText = pGrassi.toFixed(1);
+        document.getElementById('p-carbo').innerText = pCarbo.toFixed(1);
+        document.getElementById('p-proteine').innerText = pProteine.toFixed(1);
+        document.getElementById('p-sale').innerText = pSale.toFixed(2);
+
+        // Calcolo e scrittura delle percentuali comparative rispetto a Uomo / Donna
+        document.getElementById('pct-u-kcal').innerText = `${((pKcal / gdaUomo.kcal) * 100).toFixed(1)}%`;
+        document.getElementById('pct-d-kcal').innerText = `${((pKcal / gdaDonna.kcal) * 100).toFixed(1)}%`;
+
+        document.getElementById('pct-u-grassi').innerText = `${((pGrassi / gdaUomo.grassi) * 100).toFixed(1)}%`;
+        document.getElementById('pct-d-grassi').innerText = `${((pGrassi / gdaDonna.grassi) * 100).toFixed(1)}%`;
+
+        document.getElementById('pct-u-carbo').innerText = `${((pCarbo / gdaUomo.carbo) * 100).toFixed(1)}%`;
+        document.getElementById('pct-d-carbo').innerText = `${((pCarbo / gdaDonna.carbo) * 100).toFixed(1)}%`;
+
+        document.getElementById('pct-u-proteine').innerText = `${((pProteine / gdaUomo.proteine) * 100).toFixed(1)}%`;
+        document.getElementById('pct-d-proteine').innerText = `${((pProteine / gdaDonna.proteine) * 100).toFixed(1)}%`;
+
+        document.getElementById('pct-u-sale').innerText = `${((pSale / gdaUomo.sale) * 100).toFixed(1)}%`;
+        document.getElementById('pct-d-sale').innerText = `${((pSale / gdaDonna.sale) * 100).toFixed(1)}%`;
+
+        wrapperRisultati.style.display = 'block';
     }
 
     function gestisciInterfacceCaricamento(mostra, testo = "") {
