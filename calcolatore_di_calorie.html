@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calcolatore Ricette con Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7n78kS9ejaDmsAw96gqoPc4SajFA81WWhxtttuX9xlHnHBhEVjKTEKnSBlIhqiMv6yj9Zg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -111,7 +111,6 @@
             font-weight: bold;
         }
 
-        /* Elemento tecnico isolato per la decodifica dell'immagine dello scanner */
         #reader {
             display: none;
         }
@@ -470,7 +469,7 @@
         const select = document.getElementById('products-select');
         
         loading.style.display = 'block';
-        loading.innerText = "Connessione al database...";
+        loading.innerText = "Ricerca nel database...";
         wrapper.style.display = 'none';
         document.getElementById('weight-section').style.display = 'none';
         select.innerHTML = '';
@@ -480,28 +479,19 @@
             if (isBarcode) {
                 url = `https://it.openfoodfacts.org/api/v2/product/${query}.json`;
             } else {
-                // Endpoint v2 di ricerca testuale stabilizzato contro i blocchi CORS
-                url = `https://it.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&fields=product_name,brands,nutriments&page_size=24`;
-                if (query.length < 4) {
-                    url = `https://it.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&page_size=24`;
-                }
+                // CORREZIONE CRUCIALE: Usiamo la ricerca testuale libera corretta filtrando i prodotti italiani
+                url = `https://it.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&countries_tags=en:italy&action=process&json=1&page_size=30`;
             }
 
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'CalcolatoreCalorieCalabrese - WebApp - Version 1.0'
+                    'Accept': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                if(!isBarcode) {
-                    const fallbackUrl = `https://world.openfoodfacts.org/api/v2/search?text=${encodeURIComponent(query)}&page_size=20`;
-                    const fallbackResp = await fetch(fallbackUrl);
-                    if (fallbackResp.ok) return alexElaboraProdotti(await fallbackResp.json(), isBarcode, query);
-                }
-                throw new Error(`Errore Server. Status: ${response.status}`);
+                throw new Error(`Errore Server: ${response.status}`);
             }
             
             const data = await response.json();
@@ -510,7 +500,7 @@
         } catch (error) {
             loading.style.display = 'none';
             console.error("Dettaglio Errore:", error);
-            alert("Errore di connessione con il database degli alimenti. Riprova.");
+            alert("Nessun risultato o errore di connessione. Riprova con un termine diverso.");
         }
     }
 
@@ -551,8 +541,8 @@
                     sale: parseFloat(nut['salt_100g'] || nut['salt'] || 0)
                 });
 
-                const nome = p.product_name || p.product_name_it || 'Prodotto sconosciuto';
-                const marca = p.brands || 'Marca generica';
+                const nome = p.product_name_it || p.product_name || 'Prodotto sconosciuto';
+                const marca = p.brands || 'Generico';
                 option.text = `${nome} [${marca}] - ${parseFloat(kcal).toFixed(0)} kcal/100g`;
                 option.dataset.name = nome;
                 select.appendChild(option);
@@ -561,7 +551,7 @@
         });
 
         if(prodottiValidi === 0) {
-            alert("Alimento individuato, ma senza profilo nutrizionale completo.");
+            alert("Alimenti trovati, ma senza tabelle nutrizionali utilizzabili.");
             return;
         }
 
@@ -782,7 +772,7 @@
         }
     }
 
-    function eliminaRicettaLocale(nome) {
+    function代理 eliminaRicettaLocale(nome) {
         if (confirm(`Eliminare definitivamente la ricetta "${nome}"?`)) {
             let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
             delete ricetteSalvate[nome];
