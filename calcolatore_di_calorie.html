@@ -12,6 +12,7 @@
             --success-color: #27ae60;
             --scan-color: #9b59b6;
             --background-color: #f1f2f6;
+            --save-color: #e67e22;
         }
 
         body {
@@ -62,12 +63,15 @@
         }
 
         input[type="text"], input[type="number"] {
-            flex: 1;
             padding: 12px;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
+        }
+
+        .search-box input[type="text"] {
+            flex: 1;
         }
 
         button {
@@ -246,6 +250,63 @@
             background-color: #e1efe9;
             color: var(--primary-color);
         }
+
+        /* Nuova sezione per il salvataggio locale */
+        .storage-section {
+            margin-top: 20px;
+            background: #fcf3e8;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #f5d6b3;
+        }
+
+        .storage-box-inputs {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .storage-box-inputs input {
+            flex: 1;
+        }
+
+        .btn-save {
+            background-color: var(--save-color);
+        }
+
+        .saved-recipes-list {
+            margin-top: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+
+        .saved-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .saved-item:last-child {
+            border-bottom: none;
+        }
+
+        .saved-item-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -265,7 +326,7 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="search-input" placeholder="Cerca per nome o inserisci codice">
+        <input type="text" id="search-input" placeholder="Nome ingrediente o codice a barre">
         <button onclick="avviaRicercaTermine()">Cerca</button>
     </div>
 
@@ -284,7 +345,6 @@
 
     <div class="recipe-summary">
         <h3 style="color: var(--primary-color); font-size: 16px; margin-bottom: 10px;">Ingredienti inseriti:</h3>
-        <div id="lista-indigo"></div>
         <div id="lista-ingredienti"></div>
         
         <div class="total-macros-box">
@@ -299,6 +359,18 @@
             <div class="macro-row" style="font-size: 12px; color: #7f8c8d; border: none; padding-top: 5px;">
                 <span>Peso totale ingredienti:</span> <span><span id="peso-totale-ricetta">0</span> g</span>
             </div>
+        </div>
+    </div>
+
+    <div class="storage-section">
+        <h3 style="margin: 0; font-size: 15px; color: #b76e2d;">💾 Salva Ricetta sul Dispositivo</h3>
+        <div class="storage-box-inputs">
+            <input type="text" id="recipe-name-input" placeholder="Nome della ricetta (es. Torta)">
+            <button class="btn-save" onclick="salvaRicettaInLocale()">Salva</button>
+        </div>
+        <div id="saved-section-wrapper" style="margin-top: 12px; display: none;">
+            <label style="font-size: 12px; font-weight: bold; color: #555;">Ricette salvate su questo dispositivo:</label>
+            <div class="saved-recipes-list" id="saved-recipes-container"></div>
         </div>
     </div>
 
@@ -351,6 +423,11 @@
     const gdaUomo = { kcal: 2500, grassi: 95, carbo: 300, proteine: 65, sale: 5 };
     const gdaDonna = { kcal: 2000, grassi: 70, carbo: 260, proteine: 50, sale: 5 };
 
+    // Al caricamento della pagina mostra le eventuali ricette salvate precedentemente
+    window.onload = function() {
+        mostraRicetteSalvate();
+    };
+
     function analizzaImmagine(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -369,14 +446,14 @@
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("Impossibile leggere il codice a barre. Prova ad inserirlo manualmente se la foto è sfocata.");
+                alert("Impossibile leggere l'immagine. Prova ad inserire il codice numerico manualmente o scrivi il nome del prodotto.");
                 console.error(err);
             });
     }
 
     function avviaRicercaTermine() {
         const query = document.getElementById('search-input').value.trim();
-        if (!query) return alert("Inserisci un testo o un codice");
+        if (!query) return alert("Inserisci un testo o un codice numerico.");
         const isBarcode = /^\d+$/.test(query);
         eseguiFetchAPI(query, isBarcode);
     }
@@ -387,25 +464,30 @@
         const select = document.getElementById('products-select');
         
         loading.style.display = 'block';
-        loading.innerText = "Ricerca dati nel database italiano...";
+        loading.innerText = "Connessione al database italiano...";
         wrapper.style.display = 'none';
         document.getElementById('weight-section').style.display = 'none';
         select.innerHTML = '';
 
         try {
-            // Se è un codice a barre cerchiamo il prodotto diretto, se è testo forziamo i filtri di ricerca CGI sull'Italia
             const url = isBarcode 
                 ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
-                : `https://it.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=30`;
+                : `https://world.openfoodfacts.org/api/v2/search?text=${encodeURIComponent(query)}&cc=it&lc=it&fields=product_name,brands,nutriments&page_size=24`;
 
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Risposta del server non ottimale");
+            // MODIFICA FETCH: Aggiunta degli header User-Agent per autenticare l'app ed evitare blocchi
+            const response = await fetch(url, {
+                headers: {
+                    'User-Agent': 'CalcolatoreCalorieApp - WebApp - Versione1.1 - https://github.com/'
+                }
+            });
+
+            if (!response.ok) throw new Error("Errore di rete");
             
             const data = await response.json();
             loading.style.display = 'none';
 
             let prodotti = [];
-            if (isBarcode && data.status === 1) {
+            if (isBarcode && data.status === 1 && data.product) {
                 prodotti.push(data.product);
             } else if (!isBarcode && data.products && data.products.length > 0) {
                 prodotti = data.products;
@@ -419,25 +501,24 @@
             let prodottiValidi = 0;
             prodotti.forEach(p => {
                 const nut = p.nutriments || {};
-                // Verifichiamo la presenza di calorie per renderlo un record valido
-                const kcal = nut['energy-kcal_100g'] || nut['energy-kcal'];
+                const kcal = nut['energy-kcal_100g'] || nut['energy-kcal_value'] || nut['energy-kcal'];
                 
-                if (kcal !== undefined && kcal !== null) {
+                if (kcal !== undefined && kcal !== null && parseFloat(kcal) > 0) {
                     const option = document.createElement('option');
                     
                     option.value = JSON.stringify({
                         kcal: parseFloat(kcal),
-                        grassi: parseFloat(nut['fat_100g'] || nut['fat'] || 0),
-                        saturi: parseFloat(nut['saturated-fat_100g'] || nut['saturated-fat'] || 0),
-                        carbo: parseFloat(nut['carbohydrates_100g'] || nut['carbohydrates'] || 0),
-                        zuccheri: parseFloat(nut['sugars_100g'] || nut['sugars'] || 0),
-                        proteine: parseFloat(nut['proteins_100g'] || nut['proteins'] || 0),
-                        sale: parseFloat(nut['salt_100g'] || nut['salt'] || 0)
+                        grassi: parseFloat(nut['fat_100g'] || 0),
+                        saturi: parseFloat(nut['saturated-fat_100g'] || 0),
+                        carbo: parseFloat(nut['carbohydrates_100g'] || 0),
+                        zuccheri: parseFloat(nut['sugars_100g'] || 0),
+                        proteine: parseFloat(nut['proteins_100g'] || 0),
+                        sale: parseFloat(nut['salt_100g'] || 0)
                     });
 
-                    const nome = p.product_name_it || p.product_name || 'Alimento';
-                    const marca = p.brands || 'Dato non disponibile';
-                    option.text = `${nome} (${marca}) - ${parseFloat(kcal).toFixed(0)} kcal/100g`;
+                    const nome = p.product_name || 'Prodotto sconosciuto';
+                    const marca = p.brands || 'Marca generica';
+                    option.text = `${nome} [${marca}] - ${parseFloat(kcal).toFixed(0)} kcal/100g`;
                     option.dataset.name = nome;
                     select.appendChild(option);
                     prodottiValidi++;
@@ -445,7 +526,7 @@
             });
 
             if(prodottiValidi === 0) {
-                alert("Alimenti trovati, ma i record non contengono tabelle nutrizionali utilizzabili.");
+                alert("Alimento individuato, ma senza dati nutrizionali completi.");
                 return;
             }
 
@@ -454,7 +535,7 @@
 
         } catch (error) {
             loading.style.display = 'none';
-            alert("Il database è momentaneamente sovraccarico. Riprova tra pochi secondi premendo nuovamente Cerca.");
+            alert("Il database è momentaneamente occupato o sei offline. Riprova fra qualche istante.");
         }
     }
 
@@ -613,6 +694,83 @@
         document.getElementById('pct-d-sale').innerText = `${((pSale / gdaDonna.sale) * 100).toFixed(1)}%`;
 
         wrapperRisultati.style.display = 'block';
+    }
+
+    // FUNZIONI DI GESTIONE LOCALSTORAGE
+    function salvaRicettaInLocale() {
+        const nomeInput = document.getElementById('recipe-name-input');
+        const nomeRicetta = nomeInput.value.trim();
+
+        if (!nomeRicetta) {
+            return alert("Inserisci un nome prima di salvare la ricetta.");
+        }
+        if (elencoIngredienti.length === 0) {
+            return alert("Aggiungi almeno un ingrediente alla ricetta prima di salvarla.");
+        }
+
+        // Recuperiamo il dizionario delle ricette esistenti
+        let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
+        
+        // Salviamo la lista ingredienti associandola al nome ricetta
+        ricetteSalvate[nomeRicetta] = elencoIngredienti;
+        localStorage.setItem('ricette_calorie', JSON.stringify(ricetteSalvate));
+
+        nomeInput.value = '';
+        alert(`Ricetta "${nomeRicetta}" salvata correttamente sul dispositivo.`);
+        mostraRicetteSalvate();
+    }
+
+    function mostraRicetteSalvate() {
+        const container = document.getElementById('saved-recipes-container');
+        const wrapper = document.getElementById('saved-section-wrapper');
+        container.innerHTML = '';
+
+        let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
+        const chiavi = Object.keys(ricetteSalvate);
+
+        if (chiavi.length === 0) {
+            wrapper.style.display = 'none';
+            return;
+        }
+
+        wrapper.style.display = 'block';
+
+        chiavi.forEach(nome => {
+            const item = document.createElement('div');
+            item.className = 'saved-item';
+            item.innerHTML = `
+                <strong>📂 ${nome}</strong>
+                <div class="saved-item-buttons">
+                    <button class="btn-sm" style="background-color: var(--accent-color);" onclick="caricaRicettaLocale('${nome}')">Apri</button>
+                    <button class="btn-sm" style="background-color: #e74c3c;" onclick="eliminaRicettaLocale('${nome}')">X</button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function caricaRicettaLocale(nome) {
+        let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
+        if (ricetteSalvate[nome]) {
+            elencoIngredienti = ricetteSalvate[nome];
+            
+            // Trova l'id massimo presente per impostare correttamente il contatore interno
+            let maxId = -1;
+            elencoIngredienti.forEach(ing => { if(ing.id > maxId) maxId = ing.id; });
+            idContatore = maxId + 1;
+
+            aggiornaVisualizzazione();
+            alert(`Ricetta "${nome}" caricata.`);
+        }
+    }
+
+    function eliminaRicettaLocale(nome) {
+        if (confirm(`Sei sicuro di voler eliminare definitivamente "${nome}" da questo dispositivo?`)) {
+            let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
+            delete ricetteSalvate[nome];
+            localStorage.setItem('ricette_calorie', JSON.stringify(ricetteSalvate));
+            mostraRicetteSalvate();
+        }
     }
 </script>
 
