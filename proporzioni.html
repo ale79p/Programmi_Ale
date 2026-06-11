@@ -1,240 +1,334 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Proporzioni</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilanciatore Proporzioni Ricette</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --background-color: #f1f2f6;
+        }
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 15px;
-      background: #f5f5f5;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background-color);
+            padding: 15px;
+            margin: 0;
+        }
 
-    /* Struttura dell'intestazione allineata all'app calorie */
-    .header-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 10px;
-      background: white;
-      padding: 10px 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
 
-    h2 {
-      margin: 0;
-      font-size: 20px;
-      color: #2c3e50;
-    }
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
 
-    .home-btn {
-      background-color: #7f8c8d;
-      color: white;
-      text-decoration: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: bold;
-      -webkit-tap-highlight-color: transparent;
-    }
+        .home-btn {
+            background-color: #7f8c8d;
+            color: white;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
 
-    #top-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
+        h1 {
+            color: var(--primary-color);
+            font-size: 18px;
+            margin: 0;
+        }
 
-    .card {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+        h2 {
+            color: var(--primary-color);
+            font-size: 15px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
 
-    .voce-card {
-      background: #fff;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #ddd;
-    }
+        .section-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
 
-    label {
-      font-size: 14px;
-      margin-top: 5px;
-      display: block;
-    }
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-    input, select, button {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
 
-    input, select {
-      width: 100%;
-    }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
 
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      margin-top: 10px;
-    }
+        input[type="number"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: white;
+        }
 
-    button:active {
-      background: #0056b3;
-    }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
 
-    .remove-btn {
-      background: #ff4444;
-    }
+        button:hover {
+            opacity: 0.9;
+        }
 
-    .titolo-risultato-box {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
+        .results-box {
+            display: none;
+            margin-top: 20px;
+            background: #eef7fc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+        }
 
-    .titolo-risultato-box input {
-      flex: 1;
-    }
-  </style>
+        .recipe-details-box {
+            display: none;
+            margin-top: 10px;
+            background: #fff3e0;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid #ffe0b2;
+        }
+
+        .ingredient-list-preview {
+            margin: 5px 0 0 0;
+            padding-left: 20px;
+            color: #555;
+        }
+
+        .ingredient-row-res {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #ced4da;
+            font-size: 14px;
+        }
+
+        .ingredient-row-res:last-child {
+            border-bottom: none;
+        }
+
+        .factor-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #dcdde1;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="header-nav">
-  <h2>Proporzioni</h2>
-  <a href="index.html" class="home-btn">🏠 Home</a>
-</div>
+<div class="container">
+    
+    <div class="header-nav">
+        <h1>Proporzioni Ricette</h1>
+        <a href="index.html" class="home-btn">🏠 Home</a>
+    </div>
 
-<div id="top-buttons">
-  <button onclick="pulisciTutto()">Pulisci tutto</button>
-</div>
+    <div class="section-box" id="saved-recipes-section" style="display: none; background: #e8f4fd; border-color: #b3d7f7;">
+        <h2>📂 Richiama Ricetta Salvata</h2>
+        <div class="form-group">
+            <label for="recipe-selector">Seleziona una ricetta esistente:</label>
+            <select id="recipe-selector" onchange="caricaRicettaSelezionata()">
+                <option value="">-- Scegli una ricetta --</option>
+            </select>
+        </div>
+        <div class="recipe-details-box" id="recipe-preview-box">
+            <strong>Ingredienti originali rilevati:</strong>
+            <ul class="ingredient-list-preview" id="preview-ingredients-list"></ul>
+        </div>
+    </div>
 
-<div class="card">
-  <h3>Voci</h3>
+    <div class="section-box">
+        <h2>⚖️ Parametri di Bilanciamento</h2>
+        
+        <div class="form-group">
+            <label for="original-weight">Peso Totale Originario (g):</label>
+            <input type="number" id="original-weight" placeholder="Es. 600" oninput="resettaSelezioneRicetta()">
+        </div>
 
-  <div id="voci"></div>
+        <div class="form-group">
+            <label for="target-weight">Nuovo Peso Desiderato (g):</label>
+            <input type="number" id="target-weight" placeholder="Es. 800">
+        </div>
 
-  <button onclick="aggiungiVoce()">+ Aggiungi voce</button>
-</div>
+        <button onclick="calcolaProporzioni()">Calcola Nuovi Pesi</button>
+    </div>
 
-<div class="card">
-  <h3>Modifica proporzioni</h3>
+    <div class="results-box" id="results-wrapper">
+        <div class="factor-text" id="factor-output">Fattore di moltiplicazione: -</div>
+        <h3 style="margin: 0 0 10px 0; font-size: 15px; color: var(--primary-color);">Pesi Riproporzionati:</h3>
+        <div id="ingredients-results-container">
+            </div>
+    </div>
 
-  <label>Voce da modificare:</label>
-  <select id="modIndex"></select>
-
-  <label>Nuovo valore:</label>
-  <input id="nuovoValore" type="number" placeholder="Es. 150">
-
-  <button onclick="ricalcola()">Ricalcola</button>
-</div>
-
-<div class="card">
-  <h3>Risultato</h3>
-
-  <div class="titolo-risultato-box">
-    <label style="margin:0; font-size:14px;">Titolo:</label>
-    <input id="titoloRicetta" type="text" placeholder="Titolo per schermata">
-  </div>
-
-  <div id="risultato"></div>
 </div>
 
 <script>
-var count = 0;
+    let ricetteSalvate = {};
+    let ricettaCorrenteCaricata = null;
 
-function aggiungiVoce(nome, valore) {
-  if (!nome) nome = "";
-  if (!valore) valore = "";
+    window.onload = function() {
+        mappaRicetteSalvate();
+    };
 
-  var container = document.getElementById("voci");
+    // Legge le ricette salvate dal localStorage (condiviso con la pagina del calcolatore)
+    function mappaRicetteSalvate() {
+        const selector = document.getElementById('recipe-selector');
+        const section = document.getElementById('saved-recipes-section');
+        
+        try {
+            ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
+        } catch(e) {
+            console.error("Errore nel caricamento del localStorage", e);
+            ricetteSalvate = {};
+        }
 
-  var card = document.createElement("div");
-  card.className = "voce-card";
-  card.setAttribute("data-index", count);
+        const chiavi = Object.keys(ricetteSalvate);
 
-  card.innerHTML =
-    '<label>Nome:</label>' +
-    '<input type="text" id="nome' + count + '" value="' + nome + '" placeholder="Nome" oninput="aggiornaSelect()">' +
-    '<label>Valore:</label>' +
-    '<input type="number" id="valore' + count + '" value="' + valore + '" placeholder="Valore">';
-
-  card.innerHTML += '<button class="remove-btn" onclick="rimuoviVoce(' + count + ')">Rimuovi</button>';
-
-  container.appendChild(card);
-  count++;
-  aggiornaSelect();
-}
-
-function rimuoviVoce(i) {
-  var card = document.querySelector('.voce-card[data-index="' + i + '"]');
-  if (card) card.remove();
-  aggiornaSelect();
-}
-
-function aggiornaSelect() {
-  var sel = document.getElementById("modIndex");
-  sel.innerHTML = "";
-
-  var cards = document.querySelectorAll(".voce-card");
-  for (var i = 0; i < cards.length; i++) {
-    var id = cards[i].getAttribute("data-index");
-    var nomeInput = document.getElementById("nome" + id);
-    var nome = (nomeInput && nomeInput.value) ? nomeInput.value : ("Voce " + (i + 1));
-
-    var opt = document.createElement("option");
-    opt.value = id;
-    opt.textContent = nome;
-    sel.appendChild(opt);
-  }
-}
-
-function ricalcola() {
-  var cards = document.querySelectorAll(".voce-card");
-  if (cards.length < 2) {
-    alert("Inserisci almeno 2 voci.");
-    return;
-  }
-
-  var index = document.getElementById("modIndex").value;
-  var nuovo = parseFloat(document.getElementById("nuovoValore").value);
-  if (isNaN(nuovo) || nuovo <= 0) {
-    alert("Inserisci un valore valido.");
-    return;
-  }
-
-  var valori = [];
-  var nomi = [];
-
-  for (var i = 0; i < cards.length; i++) {
-    var id = cards[i].getAttribute("data-index");
-    var nome = document.getElementById("nome" + id).value;
-    var valore = parseFloat(document.getElementById("valore" + id).value);
-
-    if (isNaN(valore) || valore <= 0) {
-      alert("Tutti i valori devono essere numeri maiores di zero.");
-      return;
+        if (chiavi.length > 0) {
+            section.style.display = 'block'; // Mostra la sezione solo se ci sono ricette
+            chiavi.forEach(nome => {
+                const opt = document.createElement('option');
+                opt.value = nome;
+                opt.textContent = nome;
+                selector.appendChild(opt);
+            });
+        }
     }
 
-    nomi.push(nome);
-    valori.push(valore);
-  }
+    // Eseguito quando l'utente sceglie una ricetta dal menu a tendina
+    function caricaRicettaSelezionata() {
+        const selector = document.getElementById('recipe-selector');
+        const previewBox = document.getElementById('recipe-preview-box');
+        const previewList = document.getElementById('preview-ingredients-list');
+        const originalWeightInput = document.getElementById('original-weight');
+        
+        const nomeSelezionato = selector.value;
 
-  var pos = -1;
-  for (var j = 0; j < cards.length; j++) {
-    if (cards[j].getAttribute("data-index
+        if (!nomeSelezionato) {
+            ricettaCorrenteCaricata = null;
+            previewBox.style.display = 'none';
+            originalWeightInput.value = '';
+            return;
+        }
+
+        const ingredienti = ricetteSalvate[nomeSelezionato];
+        ricettaCorrenteCaricata = ingredienti;
+
+        // Calcola il peso totale della ricetta sommando il peso di ciascun ingrediente
+        let pesoTotaleRicetta = 0;
+        previewList.innerHTML = '';
+
+        ingredienti.forEach(ing => {
+            pesoTotaleRicetta += ing.peso;
+            
+            // Crea un piccolo riepilogo visivo degli ingredienti
+            const li = document.createElement('li');
+            li.textContent = `${ing.nome}: ${ing.peso}g`;
+            previewList.appendChild(li);
+        });
+
+        // Autocompila il campo del peso originario con la somma calcolata
+        originalWeightInput.value = pesoTotaleRicetta.toFixed(0);
+        previewBox.style.display = 'block';
+    }
+
+    // Se l'utente scrive a mano nel campo del peso, scollega la ricetta selezionata nel menu
+    function resettataSelezioneRicetta() {
+        document.getElementById('recipe-selector').value = "";
+        document.getElementById('recipe-preview-box').style.display = 'none';
+        ricettaCorrenteCaricata = null;
+    }
+
+    // Calcola le proporzioni matematiche
+    function calcolaProporzioni() {
+        const pesoOriginale = parseFloat(document.getElementById('original-weight').value);
+        const pesoDesiderato = parseFloat(document.getElementById('target-weight').value);
+        const resultsWrapper = document.getElementById('results-wrapper');
+        const containerRisultati = document.getElementById('ingredients-results-container');
+        const factorOutput = document.getElementById('factor-output');
+
+        if (isNaN(pesoOriginale) || pesoOriginale <= 0 || isNaN(pesoDesiderato) || pesoDesiderato <= 0) {
+            alert("Inserisci valori numerici validi sia per il peso originario che per quello desiderato.");
+            return;
+        }
+
+        // Formula della proporzione (Fattore di conversione)
+        const fattore = pesoDesiderato / pesoOriginale;
+        factorOutput.innerHTML = `Fattore di variazione: <strong>x${fattore.toFixed(3)}</strong>`;
+        containerRisultati.innerHTML = '';
+
+        // CASO 1: Abbiamo una ricetta strutturata caricata dal database locale
+        if (ricettaCorrenteCaricata && ricettaCorrenteCaricata.length > 0) {
+            ricettaCorrenteCaricata.forEach(ing => {
+                const nuovoPesoIngrediente = ing.peso * fattore;
+                
+                const row = document.createElement('div');
+                row.className = 'ingredient-row-res';
+                row.innerHTML = `
+                    <span><strong>🔹 ${ing.nome}</strong></span>
+                    <span>${ing.peso.toFixed(0)}g &rarr; <strong style="color:var(--success-color); font-size:16px;">${nuovoPesoIngrediente.toFixed(1)}g</strong></span>
+                `;
+                containerRisultati.appendChild(containerRisultati.appendChild(row));
+            });
+        } else {
+            // CASO 2: Calcolo generico senza dettagli (l'utente ha inserito solo i pesi totali)
+            const row = document.createElement('div');
+            row.className = 'ingredient-row-res';
+            row.innerHTML = `
+                <span>L'intera massa dell'impasto o ingrediente principale passa da:</span>
+                <br>
+                <span>${pesoOriginale}g &rarr; <strong style="color:var(--success-color); font-size:16px;">${pesoDesiderato}g</strong></span>
+            `;
+            containerRisultati.appendChild(row);
+        }
+
+        resultsWrapper.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
