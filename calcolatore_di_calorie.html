@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calcolatore Ricette con Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7n78kS9ejaDmsAw96gqoPc4SajFA81WWhxtttuX9xlHnHBhEVjKTEKnSBlIhqiMv6yj9Zg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -108,6 +108,12 @@
             padding: 10px;
             background: #f8f9fa;
             border-radius: 6px;
+            font-weight: bold;
+        }
+
+        /* Elemento tecnico isolato per la decodifica dell'immagine dello scanner */
+        #reader {
+            display: none;
         }
 
         .results-select-wrapper {
@@ -324,6 +330,8 @@
         <input type="file" id="barcode-file-input" accept="image/*" capture="environment" onchange="analizzaImmagine(event)">
     </div>
 
+    <div id="reader"></div>
+
     <div class="search-box">
         <input type="text" id="search-input" placeholder="Nome ingrediente o codice a barre">
         <button onclick="avviaRicercaTermine()">Cerca</button>
@@ -426,7 +434,6 @@
         mostraRicetteSalvate();
     };
 
-    // OTTIMIZZAZIONE DECODIFICA IMMAGINE
     function analizzaImmagine(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -435,14 +442,8 @@
         loading.style.display = 'block';
         loading.innerText = "Ottimizzazione immagine e lettura codice...";
 
-        // Creazione dell'istanza con feature sperimentali di contrasto attive per file statici
-        const html5QrCode = new Html5Qrcode("loading-indicator", { 
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true
-            }
-        });
+        const html5QrCode = new Html5Qrcode("reader");
         
-        // Esegui la scansione provando ad analizzare formati barcode standard (EAN_13 ed EAN_8)
         html5QrCode.scanFile(file, true)
             .then(barcodeResult => {
                 loading.style.display = 'none';
@@ -451,7 +452,7 @@
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("Lettura fallita. Consiglio: inquadra il codice da più vicino evitando i riflessi di luce sulla plastica, oppure digita le cifre a mano.");
+                alert("Lettura fallita. Controlla la nitidezza o digita le cifre a mano.");
                 console.error(err);
             });
     }
@@ -469,78 +470,103 @@
         const select = document.getElementById('products-select');
         
         loading.style.display = 'block';
-        loading.innerText = "Connessione al database italiano...";
+        loading.innerText = "Connessione al database...";
         wrapper.style.display = 'none';
         document.getElementById('weight-section').style.display = 'none';
         select.innerHTML = '';
 
         try {
-            const url = isBarcode 
-                ? `https://world.openfoodfacts.org/api/v2/product/${query}.json`
-                : `https://world.openfoodfacts.org/api/v2/search?text=${encodeURIComponent(query)}&cc=it&lc=it&fields=product_name,brands,nutriments&page_size=24`;
+            let url;
+            if (isBarcode) {
+                url = `https://it.openfoodfacts.org/api/v2/product/${query}.json`;
+            } else {
+                // Endpoint v2 di ricerca testuale stabilizzato contro i blocchi CORS
+                url = `https://it.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&fields=product_name,brands,nutriments&page_size=24`;
+                if (query.length < 4) {
+                    url = `https://it.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(query)}&page_size=24`;
+                }
+            }
 
             const response = await fetch(url, {
+                method: 'GET',
                 headers: {
-                    'User-Agent': 'CalcolatoreCalorieApp - WebApp - Versione1.2 - https://github.com/'
+                    'Accept': 'application/json',
+                    'User-Agent': 'CalcolatoreCalorieCalabrese - WebApp - Version 1.0'
                 }
             });
 
-            if (!response.ok) throw new Error("Errore di rete");
+            if (!response.ok) {
+                if(!isBarcode) {
+                    const fallbackUrl = `https://world.openfoodfacts.org/api/v2/search?text=${encodeURIComponent(query)}&page_size=20`;
+                    const fallbackResp = await fetch(fallbackUrl);
+                    if (fallbackResp.ok) return alexElaboraProdotti(await fallbackResp.json(), isBarcode, query);
+                }
+                throw new Error(`Errore Server. Status: ${response.status}`);
+            }
             
             const data = await response.json();
-            loading.style.display = 'none';
-
-            let prodotti = [];
-            if (isBarcode && data.status === 1 && data.product) {
-                prodotti.push(data.product);
-            } else if (!isBarcode && data.products && data.products.length > 0) {
-                prodotti = data.products;
-            }
-
-            if (prodotti.length === 0) {
-                alert("Nessun alimento trovato per: " + query);
-                return;
-            }
-
-            let prodottiValidi = 0;
-            prodotti.forEach(p => {
-                const nut = p.nutriments || {};
-                const kcal = nut['energy-kcal_100g'] || nut['energy-kcal_value'] || nut['energy-kcal'];
-                
-                if (kcal !== undefined && kcal !== null && parseFloat(kcal) > 0) {
-                    const option = document.createElement('option');
-                    
-                    option.value = JSON.stringify({
-                        kcal: parseFloat(kcal),
-                        grassi: parseFloat(nut['fat_100g'] || 0),
-                        saturi: parseFloat(nut['saturated-fat_100g'] || 0),
-                        carbo: parseFloat(nut['carbohydrates_100g'] || 0),
-                        zuccheri: parseFloat(nut['sugars_100g'] || 0),
-                        proteine: parseFloat(nut['proteins_100g'] || 0),
-                        sale: parseFloat(nut['salt_100g'] || 0)
-                    });
-
-                    const nome = p.product_name || 'Prodotto sconosciuto';
-                    const marca = p.brands || 'Marca generica';
-                    option.text = `${nome} [${marca}] - ${parseFloat(kcal).toFixed(0)} kcal/100g`;
-                    option.dataset.name = nome;
-                    select.appendChild(option);
-                    prodottiValidi++;
-                }
-            });
-
-            if(prodottiValidi === 0) {
-                alert("Alimento individuato, ma senza dati nutrizionali completi.");
-                return;
-            }
-
-            wrapper.style.display = 'block';
-            mostraSezionePeso();
+            alexElaboraProdotti(data, isBarcode, query);
 
         } catch (error) {
             loading.style.display = 'none';
-            alert("Il database è momentaneamente occupato o sei offline. Riprova fra qualche istante.");
+            console.error("Dettaglio Errore:", error);
+            alert("Errore di connessione con il database degli alimenti. Riprova.");
         }
+    }
+
+    function alexElaboraProdotti(data, isBarcode, query) {
+        const loading = document.getElementById('loading-indicator');
+        const wrapper = document.getElementById('results-wrapper');
+        const select = document.getElementById('products-select');
+        
+        loading.style.display = 'none';
+        let prodotti = [];
+
+        if (isBarcode && data.status === 1 && data.product) {
+            prodotti.push(data.product);
+        } else if (!isBarcode && data.products && data.products.length > 0) {
+            prodotti = data.products;
+        }
+
+        if (prodotti.length === 0) {
+            alert("Nessun alimento trovato per: " + query);
+            return;
+        }
+
+        let prodottiValidi = 0;
+        prodotti.forEach(p => {
+            const nut = p.nutriments || {};
+            const kcal = nut['energy-kcal_100g'] || nut['energy-kcal_value'] || nut['energy-kcal'];
+            
+            if (kcal !== undefined && kcal !== null && !isNaN(parseFloat(kcal))) {
+                const option = document.createElement('option');
+                
+                option.value = JSON.stringify({
+                    kcal: parseFloat(kcal || 0),
+                    grassi: parseFloat(nut['fat_100g'] || nut['fat'] || 0),
+                    saturi: parseFloat(nut['saturated-fat_100g'] || nut['saturated-fat'] || 0),
+                    carbo: parseFloat(nut['carbohydrates_100g'] || nut['carbohydrates'] || 0),
+                    zuccheri: parseFloat(nut['sugars_100g'] || nut['sugars'] || 0),
+                    proteine: parseFloat(nut['proteins_100g'] || nut['proteins'] || 0),
+                    sale: parseFloat(nut['salt_100g'] || nut['salt'] || 0)
+                });
+
+                const nome = p.product_name || p.product_name_it || 'Prodotto sconosciuto';
+                const marca = p.brands || 'Marca generica';
+                option.text = `${nome} [${marca}] - ${parseFloat(kcal).toFixed(0)} kcal/100g`;
+                option.dataset.name = nome;
+                select.appendChild(option);
+                prodottiValidi++;
+            }
+        });
+
+        if(prodottiValidi === 0) {
+            alert("Alimento individuato, ma senza profilo nutrizionale completo.");
+            return;
+        }
+
+        wrapper.style.display = 'block';
+        mostraSezionePeso();
     }
 
     function mostraSezionePeso() {
@@ -704,20 +730,15 @@
         const nomeInput = document.getElementById('recipe-name-input');
         const nomeRicetta = nomeInput.value.trim();
 
-        if (!nomeRicetta) {
-            return alert("Inserisci un nome prima di salvare la ricetta.");
-        }
-        if (elencoIngredienti.length === 0) {
-            return alert("Aggiungi almeno un ingrediente alla ricetta prima di salvarla.");
-        }
+        if (!nomeRicetta) return alert("Inserisci un nome prima di salvare la ricetta.");
+        if (elencoIngredienti.length === 0) return alert("Aggiungi almeno un ingrediente alla ricetta.");
 
         let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
-        
         ricetteSalvate[nomeRicetta] = elencoIngredienti;
         localStorage.setItem('ricette_calorie', JSON.stringify(ricetteSalvate));
 
         nomeInput.value = '';
-        alert(`Ricetta "${nomeRicetta}" salvata correttamente sul dispositivo.`);
+        alert(`Ricetta "${nomeRicetta}" salvata correttamente.`);
         mostraRicetteSalvate();
     }
 
@@ -735,7 +756,6 @@
         }
 
         wrapper.style.display = 'block';
-
         chiavi.forEach(nome => {
             const item = document.createElement('div');
             item.className = 'saved-item';
@@ -754,18 +774,16 @@
         let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
         if (ricetteSalvate[nome]) {
             elencoIngredienti = ricetteSalvate[nome];
-            
             let maxId = -1;
             elencoIngredienti.forEach(ing => { if(ing.id > maxId) maxId = ing.id; });
             idContatore = maxId + 1;
-
             aggiornaVisualizzazione();
             alert(`Ricetta "${nome}" caricata.`);
         }
     }
 
     function eliminaRicettaLocale(nome) {
-        if (confirm(`Sei sicuro di voler eliminare definitivamente "${nome}" da questo dispositivo?`)) {
+        if (confirm(`Eliminare definitivamente la ricetta "${nome}"?`)) {
             let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
             delete ricetteSalvate[nome];
             localStorage.setItem('ricette_calorie', JSON.stringify(ricetteSalvate));
