@@ -50,7 +50,7 @@
             font-weight: bold;
         }
 
-        h1 {
+        <h1> {
             color: var(--primary-color);
             font-size: 18px;
             margin: 0;
@@ -433,27 +433,79 @@
         mostraRicetteSalvate();
     };
 
+    /* -----------------------------------------------------------------
+       NUOVA FUNZIONE DI ANALISI ED ELABORAZIONE IMMAGINE (MIGLIORATA)
+    ----------------------------------------------------------------- */
     function analizzaImmagine(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const loading = document.getElementById('loading-indicator');
         loading.style.display = 'block';
-        loading.innerText = "Ottimizzazione immagine e lettura codice...";
+        loading.innerText = "Ottimizzazione contrasto e lettura codice...";
 
-        const html5QrCode = new Html5Qrcode("reader");
-        
-        html5QrCode.scanFile(file, true)
-            .then(barcodeResult => {
-                loading.style.display = 'none';
-                document.getElementById('search-input').value = barcodeResult;
-                eseguiFetchAPI(barcodeResult, true);
-            })
-            .catch(err => {
-                loading.style.display = 'none';
-                alert("Lettura fallita. Controlla la nitidezza o digita le cifre a mano.");
-                console.error(err);
-            });
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Creiamo un canvas dinamico per pre-elaborare digitalmente lo scatto
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Forziamo dimensioni gestibili mantenendo le proporzioni
+                const maxDim = 1000;
+                let w = img.width;
+                let h = img.height;
+                if (w > h && w > maxDim) { h = (h * maxDim) / w; w = maxDim; }
+                else if (h > maxDim) { w = (w * maxDim) / h; h = maxDim; }
+                
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                
+                // Algoritmo di binarizzazione e aumento del contrasto per le linee del codice
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    // Conversione in scala di grigi ad alto contrasto
+                    const brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
+                    // Incrementiamo il distacco tra le linee nere e lo sfondo bianco
+                    const v = (brightness < 120) ? 0 : 255;
+                    data[i] = v;     // R
+                    data[i + 1] = v; // G
+                    data[i + 2] = v; // B
+                }
+                ctx.putImageData(imgData, 0, 0);
+
+                // Convertiamo il canvas elaborato in un file blob temporaneo
+                canvas.toBlob(function(blob) {
+                    const optimizedFile = new File([blob], "scansione.png", { type: "image/png" });
+                    const html5QrCode = new Html5Qrcode("reader");
+                    
+                    // Configuriamo lo scanner puntando solo ai formati dei prodotti alimentari (EAN)
+                    const config = {
+                        formatsToSupport: [ 
+                            Html5QrcodeSupportedFormats.EAN_13, 
+                            Html5QrcodeSupportedFormats.EAN_8 
+                        ]
+                    };
+
+                    html5QrCode.scanFile(optimizedFile, config)
+                        .then(barcodeResult => {
+                            loading.style.display = 'none';
+                            document.getElementById('search-input').value = barcodeResult;
+                            eseguiFetchAPI(barcodeResult, true);
+                        })
+                        .catch(err => {
+                            loading.style.display = 'none';
+                            alert("Lettura fallita. Avvicina la fotocamera, assicurati che ci sia luce o digita il codice a mano.");
+                            console.error(err);
+                        });
+                }, 'image/png');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function avviaRicercaTermine() {
@@ -731,7 +783,7 @@
         mostraRicetteSalvate();
     }
 
-    function mostraRicetteSalvate() {
+    function muestraRicetteSalvate() {
         const container = document.getElementById('saved-recipes-container');
         const wrapper = document.getElementById('saved-section-wrapper');
         container.innerHTML = '';
