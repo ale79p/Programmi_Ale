@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calcolatore Ricette con Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <title>Calcolatore Ricette con Scanner OCR + Ritaglio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -50,7 +53,7 @@
             font-weight: bold;
         }
 
-        <h1> {
+        h1 {
             color: var(--primary-color);
             font-size: 18px;
             margin: 0;
@@ -100,6 +103,35 @@
             display: none;
         }
 
+        /* Area di anteprima e ritaglio */
+        .crop-wrapper {
+            display: none;
+            background: #222;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .crop-container {
+            max-height: 320px;
+            overflow: hidden;
+            background-color: #333;
+            border-radius: 6px;
+        }
+
+        #image-to-crop {
+            max-width: 100%;
+            display: block;
+        }
+
+        .btn-crop-trigger {
+            background-color: var(--success-color);
+            width: 100%;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
         .loading {
             text-align: center;
             display: none;
@@ -109,10 +141,6 @@
             background: #f8f9fa;
             border-radius: 6px;
             font-weight: bold;
-        }
-
-        #reader {
-            display: none;
         }
 
         .results-select-wrapper {
@@ -324,12 +352,17 @@
 
     <div>
         <label for="barcode-file-input" class="custom-file-upload">
-            📷 Scansiona Codice a Barre
+            📷 Scatta o Carica Foto Prodotto
         </label>
-        <input type="file" id="barcode-file-input" accept="image/*" capture="environment" onchange="analizzaImmagine(event)">
+        <input type="file" id="barcode-file-input" accept="image/*" capture="environment" onchange="gestisciFileScaduto(event)">
     </div>
 
-    <div id="reader"></div>
+    <div class="crop-wrapper" id="crop-wrapper">
+        <div class="crop-container">
+            <img id="image-to-crop" alt="Anteprima">
+        </div>
+        <button class="btn-crop-trigger" onclick="eseguiRitaglioEdOcr()">✂️ Ritaglia ed Elabora Numeri</button>
+    </div>
 
     <div class="search-box">
         <input type="text" id="search-input" placeholder="Nome ingrediente o codice a barre">
@@ -425,6 +458,7 @@
     let elencoIngredienti = [];
     let idContatore = 0;
     let productoCorrenteSelezionato = null;
+    let cropperInstance = null; // Istanza globale di Cropper.js
 
     const gdaUomo = { kcal: 2500, grassi: 95, carbo: 300, proteine: 65, sale: 5 };
     const gdaDonna = { kcal: 2000, grassi: 70, carbo: 260, proteine: 50, sale: 5 };
@@ -433,79 +467,78 @@
         mostraRicetteSalvate();
     };
 
-    /* -----------------------------------------------------------------
-       NUOVA FUNZIONE DI ANALISI ED ELABORAZIONE IMMAGINE (MIGLIORATA)
-    ----------------------------------------------------------------- */
-    function analizzaImmagine(event) {
+    /* Carica l'immagine scattata nell'editor Cropper */
+    function gestisciFileScaduto(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        const loading = document.getElementById('loading-indicator');
-        loading.style.display = 'block';
-        loading.innerText = "Ottimizzazione contrasto e lettura codice...";
-
         const reader = new FileReader();
         reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                // Creiamo un canvas dinamico per pre-elaborare digitalmente lo scatto
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                // Forziamo dimensioni gestibili mantenendo le proporzioni
-                const maxDim = 1000;
-                let w = img.width;
-                let h = img.height;
-                if (w > h && w > maxDim) { h = (h * maxDim) / w; w = maxDim; }
-                else if (h > maxDim) { w = (w * maxDim) / h; h = maxDim; }
-                
-                canvas.width = w;
-                canvas.height = h;
-                ctx.drawImage(img, 0, 0, w, h);
-                
-                // Algoritmo di binarizzazione e aumento del contrasto per le linee del codice
-                const imgData = ctx.getImageData(0, 0, w, h);
-                const data = imgData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    // Conversione in scala di grigi ad alto contrasto
-                    const brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
-                    // Incrementiamo il distacco tra le linee nere e lo sfondo bianco
-                    const v = (brightness < 120) ? 0 : 255;
-                    data[i] = v;     // R
-                    data[i + 1] = v; // G
-                    data[i + 2] = v; // B
-                }
-                ctx.putImageData(imgData, 0, 0);
+            const imageElement = document.getElementById('image-to-crop');
+            imageElement.src = e.target.result;
+            
+            document.getElementById('crop-wrapper').style.display = 'block';
 
-                // Convertiamo il canvas elaborato in un file blob temporaneo
-                canvas.toBlob(function(blob) {
-                    const optimizedFile = new File([blob], "scansione.png", { type: "image/png" });
-                    const html5QrCode = new Html5Qrcode("reader");
-                    
-                    // Configuriamo lo scanner puntando solo ai formati dei prodotti alimentari (EAN)
-                    const config = {
-                        formatsToSupport: [ 
-                            Html5QrcodeSupportedFormats.EAN_13, 
-                            Html5QrcodeSupportedFormats.EAN_8 
-                        ]
-                    };
+            // Distruggi istanze precedenti se l'utente rifà la foto
+            if (cropperInstance) {
+                cropperInstance.destroy();
+            }
 
-                    html5QrCode.scanFile(optimizedFile, config)
-                        .then(barcodeResult => {
-                            loading.style.display = 'none';
-                            document.getElementById('search-input').value = barcodeResult;
-                            eseguiFetchAPI(barcodeResult, true);
-                        })
-                        .catch(err => {
-                            loading.style.display = 'none';
-                            alert("Lettura fallita. Avvicina la fotocamera, assicurati che ci sia luce o digita il codice a mano.");
-                            console.error(err);
-                        });
-                }, 'image/png');
-            };
-            img.src = e.target.result;
+            // Inizializza l'editor con selezione libera
+            cropperInstance = new Cropper(imageElement, {
+                viewMode: 1,
+                autoCropArea: 0.8,
+                movable: true,
+                zoomable: true,
+                rotatable: false,
+                scalable: false
+            });
         };
         reader.readAsDataURL(file);
+    }
+
+    /* Ritaglia l'area selezionata e la passa all'OCR */
+    function eseguiRitaglioEdOcr() {
+        if (!cropperInstance) return;
+
+        const loading = document.getElementById('loading-indicator');
+        loading.style.display = 'block';
+        loading.innerText = "Isolamento area e lettura cifre numeriche...";
+        
+        // Estrae la porzione selezionata ad alta definizione
+        const canvasRitagliato = cropperInstance.getCroppedCanvas({
+            maxWidth: 800,
+            maxHeight: 600
+        });
+
+        // Nascondi l'area di ritaglio dopo la conferma
+        document.getElementById('crop-wrapper').style.display = 'none';
+
+        // Diamo in pasto il canvas ritagliato direttamente a Tesseract OCR
+        Tesseract.recognize(
+            canvasRitagliato,
+            'eng',
+            { logger: m => console.log(m) }
+        ).then(({ data: { text } }) => {
+            loading.style.display = 'none';
+            
+            // Filtriamo mantenendo solo i numeri consecutivi
+            const numeriTrovati = text.replace(/[^0-9]/g, '');
+            
+            if (numeriTrovati && (numeriTrovati.length >= 7)) {
+                const codiceFinale = numeriTrovati.substring(0, 13);
+                document.getElementById('search-input').value = codiceFinale;
+                eseguiFetchAPI(codiceFinale, true);
+            } else {
+                alert("Nessun numero intercettato nel riquadro selezionato. Riprova stringendo bene la selezione solo sui numeri sotto le barre.");
+            }
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }).catch(err => {
+            loading.style.display = 'none';
+            alert("Errore nell'analisi del testo.");
+            console.error(err);
+        });
     }
 
     function avviaRicercaTermine() {
@@ -521,7 +554,7 @@
         const select = document.getElementById('products-select');
         
         loading.style.display = 'block';
-        loading.innerText = "Ricerca nel database...";
+        loading.innerText = "Ricerca nel database OpenFoodFacts...";
         wrapper.style.display = 'none';
         document.getElementById('weight-section').style.display = 'none';
         select.innerHTML = '';
@@ -536,14 +569,10 @@
 
             const response = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
+                headers: { 'Accept': 'application/json' }
             });
 
-            if (!response.ok) {
-                throw new Error(`Errore Server: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Errore Server: ${response.status}`);
             
             const data = await response.json();
             alexElaboraProdotti(data, isBarcode, query);
@@ -551,7 +580,7 @@
         } catch (error) {
             loading.style.display = 'none';
             console.error("Dettaglio Errore:", error);
-            alert("Nessun risultato o errore di connessione. Riprova con un termine diverso.");
+            alert("Prodotto non trovato o errore di rete. Riprova digitando il nome dell'alimento.");
         }
     }
 
@@ -570,7 +599,7 @@
         }
 
         if (prodotti.length === 0) {
-            alert("Nessun alimento trovato per: " + query);
+            alert("Nessun alimento corrispondente a: " + query);
             return;
         }
 
@@ -602,7 +631,7 @@
         });
 
         if(prodottiValidi === 0) {
-            alert("Alimenti trovati, ma senza tabelle nutrizionali utilizzabili.");
+            alert("Trovato ma senza dati nutrizionali calcolabili.");
             return;
         }
 
@@ -631,9 +660,7 @@
         const pesoInput = document.getElementById('weight-input');
         const grammi = parseFloat(pesoInput.value);
 
-        if (isNaN(grammi) || grammi <= 0) {
-            return alert("Inserisci un peso valido.");
-        }
+        if (isNaN(grammi) || grammi <= 0) return alert("Inserisci un peso valido.");
 
         const fattore = grammi / 100;
         const n = prodottoCorrenteSelezionato.nutrienti;
@@ -783,7 +810,7 @@
         mostraRicetteSalvate();
     }
 
-    function muestraRicetteSalvate() {
+    function mostraRicetteSalvate() {
         const container = document.getElementById('saved-recipes-container');
         const wrapper = document.getElementById('saved-section-wrapper');
         container.innerHTML = '';
@@ -823,7 +850,7 @@
         }
     }
 
-    function eliminaRicettaLocale(nome) {
+    function代理eliminaRicettaLocale(nome) {
         if (confirm(`Eliminare definitivamente la ricetta "${nome}"?`)) {
             let ricetteSalvate = JSON.parse(localStorage.getItem('ricette_calorie')) || {};
             delete ricetteSalvate[nome];
