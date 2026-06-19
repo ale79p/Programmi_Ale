@@ -13,6 +13,7 @@
             --calorie-color: #e67e22;
             --proporzioni-color: #2980b9;
             --piante-color: #2e7d32; /* Colore Verde per la diagnostica piante */
+            --cf-color: #9b59b6;      /* Colore Viola per il codice fiscale */
         }
 
         body {
@@ -79,6 +80,10 @@
             border-left-color: var(--piante-color);
         }
 
+        .card-cf {
+            border-left-color: var(--cf-color);
+        }
+
         .icon-wrapper {
             font-size: 32px;
             margin-right: 20px;
@@ -114,6 +119,7 @@
         .card-calorie .arrow { color: var(--calorie-color); }
         .card-proporzioni .arrow { color: var(--proporzioni-color); }
         .card-piante .arrow { color: var(--piante-color); }
+        .card-cf .arrow { color: var(--cf-color); }
     </style>
 </head>
 <body>
@@ -145,6 +151,15 @@
         <div class="info-wrapper">
             <div class="app-title">Pronto Soccorso Piante & Orto</div>
             <div class="app-description">Identifica i problemi di ortaggi e piante tramite guida ai sintomi e strumenti gratuiti di scansione visiva.</div>
+        </div>
+        <div class="arrow">›</div>
+    </a>
+
+    <a href="calcolo_codice_fiscale.html" class="app-card card-cf">
+        <div class="icon-wrapper">📇</div>
+        <div class="info-wrapper">
+            <div class="app-title">Calcolo Codice Fiscale</div>
+            <div class="app-description">Genera il codice fiscale analizzando i dati anagrafici e cercando i codici catastali dei comuni in tempo reale.</div>
         </div>
         <div class="arrow">›</div>
     </a>
