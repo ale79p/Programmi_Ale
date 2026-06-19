@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calcolatore Codice Fiscale - Smart</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --background-color: #f1f2f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background-color);
+            padding: 15px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .home-btn {
+            background-color: #7f8c8d;
+            color: white;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="date"], select {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            padding: 10px 0;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        /* Stile per la lista di suggerimenti dei comuni */
+        .suggestions-list {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:hover {
+            background-color: #eef7fc;
+        }
+
+        button {
+            padding: 14px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .result-box {
+            display: none;
+            margin-top: 25px;
+            padding: 15px;
+            background: #eef7fc;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            text-align: center;
+        }
+
+        .cf-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            letter-spacing: 2px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .explanation {
+            font-size: 12px;
+            color: #555;
+            text-align: left;
+            margin-top: 10px;
+            line-height: 1.4;
+            background: #fff;
+            padding: 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="header-nav">
+        <h1>Calcolo Codice Fiscale</h1>
+        <a href="index.html" class="home-btn">🏠 Home</a>
+    </div>
+
+    <div class="form-group">
+        <label for="cognome">Cognome</label>
+        <input type="text" id="cognome" placeholder="Es. Rossi" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" placeholder="Es. Mario" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+        <label>Sesso</label>
+        <div class="radio-group">
+            <label><input type="radio" name="sesso" value="M" checked> Maschio (M)</label>
+            <label><input type="radio" name="sesso" value="F"> Femmina (F)</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="data-nascita">Data di Nascita</label>
+        <input type="date" id="data-nascita">
+    </div>
+
+    <div class="form-group">
+        <label for="comune-input">Comune di Nascita</label>
+        <input type="text" id="comune-input" placeholder="Inizia a scrivere il comune..." autocomplete="off" oninput="cercaComuneOnline()">
+        <input type="hidden" id="comune-codice-valore">
+        <div class="suggestions-list" id="suggestions"></div>
+    </div>
+
+    <button onclick="calcolaCodiceFiscale()">Genera Codice Fiscale</button>
+
+    <div class="result-box" id="result-box">
+        <label style="color: var(--accent-color); font-weight: bold;">Codice Fiscale Calcolato:</label>
+        <div class="cf-display" id="cf-output">---------</div>
+        <div class="explanation" id="cf-spiegazione"></div>
+    </div>
+
+</div>
+
+<script>
+    const dispariMappa = {
+        '0': 1, '1': 0, '2': 5, '3': 7, '4': 9, '5': 13, '6': 15, '7': 17, '8': 19, '9': 21,
+        'A': 1, 'B': 0, 'C': 5, 'D': 7, 'E': 9, 'F': 13, 'G': 15, 'H': 17, 'I': 19, 'J': 21,
+        'K': 2, 'L': 4, 'M': 18, 'N': 20, 'O': 11, 'P': 3, 'Q': 6, 'R': 8, 'S': 12, 'T': 14,
+        'U': 16, 'V': 10, 'W': 22, 'X': 25, 'Y': 24, 'Z': 23
+    };
+
+    const pariMappa = {
+        '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+        'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9,
+        'K': 10, 'L': 11, 'M': 12, 'N': 13, 'O': 14, 'P': 15, 'Q': 16, 'R': 17, 'S': 18, 'T': 19,
+        'U': 20, 'V': 21, 'W': 22, 'X': 23, 'Y': 24, 'Z': 25
+    };
+
+    const mesiMappa = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T'];
+    const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let timerRicerca;
+
+    // Funzione che interroga l'API remota quando l'utente scrive
+    function cercaComuneOnline() {
+        clearTimeout(timerRicerca);
+        const input = document.getElementById('comune-input').value.trim();
+        const listaSugg = document.getElementById('suggestions');
+        
+        if (input.length < 2) {
+            listaSugg.style.display = 'none';
+            return;
+        }
+
+        // Aspetta 300 millisecondi dopo l'ultimo tasto premuto per non sovraccaricare la rete
+        timerRicerca = setTimeout(async () => {
+            try {
+                const response = await fetch(`https://comuni-ita.sardegnasemplice.it/api/v1/comuni?nome=${encodeURIComponent(input)}`);
+                if (!response.ok) return;
+                const comuni = await response.json();
+                
+                listaSugg.innerHTML = '';
+                if (comuni.length > 0) {
+                    comuni.slice(0, 10).forEach(c => { // Mostra massimo 10 risultati
+                        if (c.codiceCatastale) {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.innerText = `${c.nome} (${c.provincia.sigla})`;
+                            item.onclick = function() {
+                                document.getElementById('comune-input').value = `${c.nome} (${c.provincia.sigla})`;
+                                document.getElementById('comune-codice-valore').value = c.codiceCatastale;
+                                listaSugg.style.display = 'none';
+                            };
+                            listaSugg.appendChild(item);
+                        }
+                    });
+                    listaSugg.style.display = 'block';
+                } else {
+                    listaSugg.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Errore recupero comuni:", err);
+            }
+        }, 300);
+    }
+
+    // Chiude la lista dei suggerimenti se l'utente clicca fuori
+    document.addEventListener('click', function(e) {
+        if (e.target.id !== 'comune-input') {
+            document.getElementById('suggestions').style.display = 'none';
+        }
+    });
+
+    function pulisciStringa(str) {
+        return str.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z]/g, "");
+    }
+
+    function estraiLettereCognome(stringa) {
+        let str = pulisciStringa(stringa);
+        let consonanti = str.replace(/[AEIOU]/g, "");
+        let vocali = str.replace(/[^AEIOU]/g, "");
+        return (consonanti + vocali + "XXX").substring(0, 3);
+    }
+
+    function estraiLettereNome(stringa) {
+        let str = pulisciStringa(stringa);
+        let consonanti = str.replace(/[AEIOU]/g, "");
+        let vocali = str.replace(/[^AEIOU]/g, "");
+        if (consonanti.length >= 4) {
+            return consonanti[0] + consonanti[2] + consonanti[3];
+        }
+        return (consonanti + vocali + "XXX").substring(0, 3);
+    }
+
+    function calcolaCodiceFiscale() {
+        const cognomeInput = document.getElementById('cognome').value;
+        const nomeInput = document.getElementById('nome').value;
+        const sessoInput = document.querySelector('input[name="sesso"]:checked').value;
+        const dataInput = document.getElementById('data-nascita').value;
+        const comuneCodice = document.getElementById('comune-codice-valore').value;
+        const comuneNome = document.getElementById('comune-input').value;
+
+        if (!cognomeInput || !nomeInput || !dataInput) {
+            alert("Per favore, compila Cognome, Nome e Data di Nascita.");
+            return;
+        }
+
+        if (!comuneCodice) {
+            alert("Per favore, seleziona un comune valido dall'elenco dei suggerimenti.");
+            return;
+        }
+
+        let codiceCognome = estraiLettereCognome(cognomeInput);
+        let codiceNome = estraiLettereNome(nomeInput);
+
+        let dataObj = new Date(dataInput);
+        let anno = dataObj.getFullYear().toString().slice(-2);
+        let meseSegno = mesiMappa[dataObj.getMonth()];
+        let giorno = dataObj.getDate();
+
+        if (sessoInput === 'F') {
+            giorno += 40;
+        }
+        let giornoSegno = giorno < 10 ? '0' + giorno : giorno.toString();
+
+        let codiceParziale = codiceCognome + codiceNome + anno + meseSegno + giornoSegno + comuneCodice;
+        
+        let somma = 0;
+        for (let i = 0; i < 15; i++) {
+            let carattere = codiceParziale[i];
+            if (i % 2 === 0) {
+                somma += dispariMappa[carattere] || 0;
+            } else {
+                somma += pariMappa[carattere] || 0;
+            }
+        }
+        let carattereControllo = alfabeto[somma % 26];
+
+        const outputBox = document.getElementById('result-box');
+        const outputDisplay = document.getElementById('cf-output');
+        const spiegazioneDisplay = document.getElementById('cf-spiegazione');
+
+        outputBox.style.display = 'block';
+        outputDisplay.innerText = codiceParziale + carattereControllo;
+        outputDisplay.style.color = "var(--primary-color)";
+        
+        spiegazioneDisplay.innerHTML = `
+            <strong>Analisi Logica Strutturata:</strong><br>
+            • Cognome: <strong>${codeCognome}</strong><br>
+            • Nome: <strong>${codeNome}</strong><br>
+            • Anno: <strong>${anno}</strong> | Mese: <strong>${meseSegno}</strong> | Giorno (${sessoInput}): <strong>${giornoSegno}</strong><br>
+            • Comune: <strong>${comuneNome}</strong> (Codice: ${comuneCodice})<br>
+            • Lettera di Controllo finale: <strong>${carattereControllo}</strong>
+        `;
+    }
+</script>
+
+</body>
+</html>
