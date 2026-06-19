@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calcolatore Codice Fiscale - Smart</title>
+    <title>Calcolatore Codice Fiscale - Autonomo</title>
     <style>
         :root {
             --primary-color: #2c3e50;
-            --accent-color: #3498db;
+            --accent-color: #9b59b6;
             --success-color: #27ae60;
             --background-color: #f1f2f6;
         }
@@ -89,7 +89,6 @@
             cursor: pointer;
         }
 
-        /* Stile per la lista di suggerimenti dei comuni */
         .suggestions-list {
             position: absolute;
             top: 70px;
@@ -114,7 +113,7 @@
         }
 
         .suggestion-item:hover {
-            background-color: #eef7fc;
+            background-color: #f3e5f5;
         }
 
         button {
@@ -134,7 +133,7 @@
             display: none;
             margin-top: 25px;
             padding: 15px;
-            background: #eef7fc;
+            background: #fdf6ff;
             border-radius: 8px;
             border-left: 4px solid var(--accent-color);
             text-align: center;
@@ -195,10 +194,15 @@
     </div>
 
     <div class="form-group">
-        <label for="comune-input">Comune di Nascita</label>
-        <input type="text" id="comune-input" placeholder="Inizia a scrivere il comune..." autocomplete="off" oninput="cercaComuneOnline()">
+        <label for="comune-input">Comune o Capoluogo di Nascita</label>
+        <input type="text" id="comune-input" placeholder="Inizia a scrivere (es. Roma, Milano...)" autocomplete="off" oninput="cercaComuneLocale()">
         <input type="hidden" id="comune-codice-valore">
         <div class="suggestions-list" id="suggestions"></div>
+    </div>
+
+    <div class="form-group" style="margin-top: -5px; margin-bottom: 20px;">
+        <label for="manual-code" style="font-size: 11px; color: #7f8c8d; font-weight: normal;">Oppure inserisci codice catastale manualmente (4 caratteri):</label>
+        <input type="text" id="manual-code" placeholder="Es. H501" maxlength="4" style="padding: 8px; font-size: 13px; text-transform: uppercase;" oninput="gestisciCodiceManuale()">
     </div>
 
     <button onclick="calcolaCodiceFiscale()">Genera Codice Fiscale</button>
@@ -212,6 +216,63 @@
 </div>
 
 <script>
+    // Database locale incorporato dei capoluoghi e delle grandi città d'Italia per indipendenza totale da API esterne
+    const databaseComuni = [
+        {nome: "Agrigento", codice: "A089", prov: "AG"}, {nome: "Alessandria", codice: "A182", prov: "AL"},
+        {nome: "Ancona", codice: "A271", prov: "AN"}, {nome: "Aosta", codice: "A326", prov: "AO"},
+        {nome: "Arezzo", codice: "A390", prov: "AR"}, {nome: "Ascoli Piceno", codice: "A462", prov: "AP"},
+        {nome: "Asti", codice: "A479", prov: "AT"}, {nome: "Avellino", codice: "A509", prov: "AV"},
+        {nome: "Bari", codice: "A662", prov: "BA"}, {nome: "Barletta", codice: "A669", prov: "BT"},
+        {nome: "Belluno", codice: "A757", prov: "BL"}, {nome: "Benevento", codice: "A783", prov: "BN"},
+        {nome: "Bergamo", codice: "A794", prov: "BG"}, {nome: "Biella", codice: "A859", prov: "BI"},
+        {nome: "Bologna", codice: "A944", prov: "BO"}, {nome: "Bolzano", codice: "A952", prov: "BZ"},
+        {nome: "Brescia", codice: "B157", prov: "BS"}, {nome: "Brindisi", codice: "B180", prov: "BR"},
+        {nome: "Cagliari", codice: "B354", prov: "CA"}, {nome: "Caltanissetta", codice: "B429", prov: "CL"},
+        {nome: "Campobasso", codice: "B519", prov: "CB"}, {nome: "Caserta", codice: "B963", prov: "CE"},
+        {nome: "Catania", codice: "C351", prov: "CT"}, {nome: "Catanzaro", codice: "C352", prov: "CZ"},
+        {nome: "Chieti", codice: "C632", prov: "CH"}, {nome: "Como", codice: "C933", prov: "CO"},
+        {nome: "Cosenza", codice: "D086", prov: "CS"}, {nome: "Cremona", codice: "D150", prov: "CR"},
+        {nome: "Crotone", codice: "D122", prov: "KR"}, {nome: "Cuneo", codice: "D205", prov: "CN"},
+        {nome: "Enna", codice: "C342", prov: "EN"}, {nome: "Fermo", codice: "D542", prov: "FM"},
+        {nome: "Ferrara", codice: "D548", prov: "FE"}, {nome: "Firenze", codice: "D612", prov: "FI"},
+        {nome: "Foggia", codice: "D643", prov: "FG"}, {nome: "Forlì", codice: "D704", prov: "FC"},
+        {nome: "Frosinone", codice: "D810", prov: "FR"}, {nome: "Genova", codice: "D969", prov: "GE"},
+        {nome: "Gorizia", codice: "E098", prov: "GO"}, {nome: "Grosseto", codice: "E202", prov: "GR"},
+        {nome: "Imperia", codice: "E290", prov: "IM"}, {nome: "Isernia", codice: "E335", prov: "IS"},
+        {nome: "L'Aquila", codice: "A345", prov: "AQ"}, {nome: "La Spezia", codice: "E463", prov: "SP"},
+        {nome: "Latina", codice: "E472", prov: "LT"}, {nome: "Lecce", codice: "E423", prov: "LE"},
+        {nome: "Lecco", codice: "E419", prov: "LC"}, {nome: "Livorno", codice: "E625", prov: "LI"},
+        {nome: "Lodi", codice: "E648", prov: "LO"}, {nome: "Lucca", codice: "E730", prov: "LU"},
+        {nome: "Macerata", codice: "E814", prov: "MC"}, {nome: "Mantova", codice: "E897", prov: "MN"},
+        {nome: "Massa", codice: "F023", prov: "MS"}, {nome: "Matera", codice: "F052", prov: "MT"},
+        {nome: "Messina", codice: "F158", prov: "ME"}, {nome: "Milano", codice: "F205", prov: "MI"},
+        {nome: "Modena", codice: "F257", prov: "MO"}, {nome: "Monza", codice: "F704", prov: "MB"},
+        {nome: "Napoli", codice: "F839", prov: "NA"}, {nome: "Novara", codice: "F952", prov: "NO"},
+        {nome: "Nuoro", codice: "F979", prov: "NU"}, {nome: "Oristano", codice: "G113", prov: "OR"},
+        {nome: "Padova", codice: "G224", prov: "PD"}, {nome: "Palermo", codice: "G273", prov: "PA"},
+        {nome: "Parma", codice: "G337", prov: "PR"}, {nome: "Pavia", codice: "G388", prov: "PV"},
+        {nome: "Perugia", codice: "G478", prov: "PG"}, {nome: "Pesaro", codice: "G479", prov: "PU"},
+        {nome: "Pescara", codice: "G482", prov: "PE"}, {nome: "Piacenza", codice: "G535", prov: "PC"},
+        {nome: "Pisa", codice: "G702", prov: "PI"}, {nome: "Pistoia", codice: "G713", prov: "PT"},
+        {nome: "Pordenone", codice: "G888", prov: "PN"}, {nome: "Potenza", codice: "G942", prov: "PZ"},
+        {nome: "Prato", codice: "G999", prov: "PO"}, {nome: "Ragusa", codice: "H163", prov: "RG"},
+        {nome: "Ravenna", codice: "H199", prov: "RA"}, {nome: "Reggio Calabria", codice: "H224", prov: "RC"},
+        {nome: "Reggio Emilia", codice: "H223", prov: "RE"}, {nome: "Rieti", codice: "H282", prov: "RI"},
+        {nome: "Rimini", codice: "H294", prov: "RN"}, {nome: "Roma", codice: "H501", prov: "RM"},
+        {nome: "Rovigo", codice: "H620", prov: "RO"}, {nome: "Salerno", codice: "H703", prov: "SA"},
+        {nome: "Sassari", codice: "I452", prov: "SS"}, {nome: "Savona", codice: "I480", prov: "SV"},
+        {nome: "Siena", codice: "I726", prov: "SI"}, {nome: "Siracusa", codice: "I754", prov: "SR"},
+        {nome: "Sondrio", codice: "I829", prov: "SO"}, {nome: "Taranto", codice: "L049", prov: "TA"},
+        {nome: "Teramo", codice: "L103", prov: "TE"}, {nome: "Terni", codice: "L117", prov: "TR"},
+        {nome: "Torino", codice: "L219", prov: "TO"}, {nome: "Trapani", codice: "L331", prov: "TP"},
+        {nome: "Trento", codice: "L378", prov: "TN"}, {nome: "Treviso", codice: "L407", prov: "TV"},
+        {nome: "Trieste", codice: "L424", prov: "TS"}, {nome: "Udine", codice: "L483", prov: "UD"},
+        {nome: "Varese", codice: "L682", prov: "VA"}, {nome: "Venezia", codice: "L736", prov: "VE"},
+        {nome: "Verbania", codice: "L746", prov: "VB"}, {nome: "Vercelli", codice: "L750", prov: "VC"},
+        {nome: "Verona", codice: "L781", prov: "VR"}, {nome: "Vibo Valentia", codice: "F537", prov: "VV"},
+        {nome: "Vicenza", codice: "L840", prov: "VI"}, {nome: "Viterbo", codice: "M082", prov: "VT"}
+    ];
+
     const dispariMappa = {
         '0': 1, '1': 0, '2': 5, '3': 7, '4': 9, '5': 13, '6': 15, '7': 17, '8': 19, '9': 21,
         'A': 1, 'B': 0, 'C': 5, 'D': 7, 'E': 9, 'F': 13, 'G': 15, 'H': 17, 'I': 19, 'J': 21,
@@ -228,52 +289,47 @@
 
     const mesiMappa = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T'];
     const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let timerRicerca;
 
-    // Funzione che interroga l'API remota quando l'utente scrive
-    function cercaComuneOnline() {
-        clearTimeout(timerRicerca);
-        const input = document.getElementById('comune-input').value.trim();
+    function cercaComuneLocale() {
+        const input = document.getElementById('comune-input').value.trim().toLowerCase();
         const listaSugg = document.getElementById('suggestions');
         
-        if (input.length < 2) {
+        if (input.length < 1) {
             listaSugg.style.display = 'none';
             return;
         }
 
-        // Aspetta 300 millisecondi dopo l'ultimo tasto premuto per non sovraccaricare la rete
-        timerRicerca = setTimeout(async () => {
-            try {
-                const response = await fetch(`https://comuni-ita.sardegnasemplice.it/api/v1/comuni?nome=${encodeURIComponent(input)}`);
-                if (!response.ok) return;
-                const comuni = await response.json();
-                
-                listaSugg.innerHTML = '';
-                if (comuni.length > 0) {
-                    comuni.slice(0, 10).forEach(c => { // Mostra massimo 10 risultati
-                        if (c.codiceCatastale) {
-                            const item = document.createElement('div');
-                            item.className = 'suggestion-item';
-                            item.innerText = `${c.nome} (${c.provincia.sigla})`;
-                            item.onclick = function() {
-                                document.getElementById('comune-input').value = `${c.nome} (${c.provincia.sigla})`;
-                                document.getElementById('comune-codice-valore').value = c.codiceCatastale;
-                                listaSugg.style.display = 'none';
-                            };
-                            listaSugg.appendChild(item);
-                        }
-                    });
-                    listaSugg.style.display = 'block';
-                } else {
+        // Filtra nel database locale
+        const filtrati = databaseComuni.filter(c => c.nome.toLowerCase().includes(input));
+        
+        listaSugg.innerHTML = '';
+        if (filtrati.length > 0) {
+            filtrati.slice(0, 5).forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerText = `${c.nome} (${c.prov})`;
+                item.onclick = function() {
+                    document.getElementById('comune-input').value = `${c.nome} (${c.prov})`;
+                    document.getElementById('comune-codice-valore').value = c.codice;
+                    document.getElementById('manual-code').value = ''; // Svuota manuale
                     listaSugg.style.display = 'none';
-                }
-            } catch (err) {
-                console.error("Errore recupero comuni:", err);
-            }
-        }, 300);
+                };
+                listaSugg.appendChild(item);
+            });
+            listaSugg.style.display = 'block';
+        } else {
+            listaSugg.style.display = 'none';
+        }
     }
 
-    // Chiude la lista dei suggerimenti se l'utente clicca fuori
+    function gestisciCodiceManuale() {
+        const manual = document.getElementById('manual-code').value.trim().toUpperCase();
+        if (manual.length > 0) {
+            document.getElementById('comune-input').value = '';
+            document.getElementById('comune-codice-valore').value = manual;
+        }
+    }
+
     document.addEventListener('click', function(e) {
         if (e.target.id !== 'comune-input') {
             document.getElementById('suggestions').style.display = 'none';
@@ -306,16 +362,16 @@
         const nomeInput = document.getElementById('nome').value;
         const sessoInput = document.querySelector('input[name="sesso"]:checked').value;
         const dataInput = document.getElementById('data-nascita').value;
-        const comuneCodice = document.getElementById('comune-codice-valore').value;
-        const comuneNome = document.getElementById('comune-input').value;
+        let comuneCodice = document.getElementById('comune-codice-valore').value.trim().toUpperCase();
+        let comuneNome = document.getElementById('comune-input').value || "Codice Manuale";
 
         if (!cognomeInput || !nomeInput || !dataInput) {
             alert("Per favore, compila Cognome, Nome e Data di Nascita.");
             return;
         }
 
-        if (!comuneCodice) {
-            alert("Per favore, seleziona un comune valido dall'elenco dei suggerimenti.");
+        if (comuneCodice.length !== 4) {
+            alert("Inserisci un comune valido o scrivi un codice catastale di 4 caratteri (es. H501).");
             return;
         }
 
@@ -351,14 +407,13 @@
 
         outputBox.style.display = 'block';
         outputDisplay.innerText = codiceParziale + carattereControllo;
-        outputDisplay.style.color = "var(--primary-color)";
         
         spiegazioneDisplay.innerHTML = `
             <strong>Analisi Logica Strutturata:</strong><br>
-            • Cognome: <strong>${codeCognome}</strong><br>
-            • Nome: <strong>${codeNome}</strong><br>
+            • Cognome: <strong>${codiceCognome}</strong><br>
+            • Nome: <strong>${codiceNome}</strong><br>
             • Anno: <strong>${anno}</strong> | Mese: <strong>${meseSegno}</strong> | Giorno (${sessoInput}): <strong>${giornoSegno}</strong><br>
-            • Comune: <strong>${comuneNome}</strong> (Codice: ${comuneCodice})<br>
+            • Luogo: <strong>${comuneNome}</strong> (Codice Catastale: ${comuneCodice})<br>
             • Lettera di Controllo finale: <strong>${carattereControllo}</strong>
         `;
     }
